@@ -5,123 +5,113 @@
     <style>
         :root { --isb-red: #cc0000; --isb-bg: #050505; --isb-panel: #111; --isb-border: #2a2a2a; --text: #e0e0e0; }
         body { background: var(--isb-bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        #priority-alert { display: none; background: var(--isb-red); color: white; padding: 15px; text-align: center; font-weight: bold; border-bottom: 2px solid white; animation: blinker 1.5s linear infinite; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; }
-        @keyframes blinker { 50% { opacity: 0.7; } }
         #sidebar { width: 280px; background: var(--isb-panel); border-right: 1px solid var(--isb-border); display: flex; flex-direction: column; height: 100%; }
         .header { padding: 20px; border-bottom: 2px solid var(--isb-red); text-align: center; }
-        #server-status { font-size: 0.65rem; margin-top: 5px; font-weight: bold; letter-spacing: 1px; }
-        .status-on { color: #00ff00; }
-        .status-off { color: #ff0000; }
         nav { flex-grow: 1; overflow-y: auto; }
         nav button { width: 100%; background: none; border: none; color: #888; padding: 12px 20px; text-align: left; cursor: pointer; border-bottom: 1px solid #1a1a1a; font-size: 0.85rem; }
         nav button:hover, nav button.active { background: #1a1a1a; color: #fff; border-left: 4px solid var(--isb-red); }
-        #main { flex-grow: 1; padding: 80px 40px 40px; overflow-y: auto; position: relative; }
+        #main { flex-grow: 1; padding: 40px; overflow-y: auto; }
         .page { display: none; max-width: 1000px; margin: 0 auto; }
         .page.visible { display: block; }
-        .card { background: #0d0d0d; border: 1px solid var(--isb-border); padding: 20px; margin-bottom: 20px; border-radius: 4px; position: relative; }
-        #chat-window { height: 60vh; overflow-y: auto; background: #000; border: 1px solid #222; padding: 20px; margin-bottom: 10px; display: flex; flex-direction: column; }
-        .msg { margin-bottom: 15px; padding: 10px; background: #0a0a0a; border-left: 3px solid var(--isb-red); }
-        .msg-meta { font-size: 0.7rem; color: var(--isb-red); font-weight: bold; margin-bottom: 5px; }
-        .msg-body { font-family: 'Courier New', monospace; color: #ccc; word-wrap: break-word; white-space: pre-wrap; }
-        input, select, textarea { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; box-sizing: border-box; }
-        textarea { height: 180px; resize: vertical; font-family: monospace; }
-        .btn { background: var(--isb-red); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; transition: 0.2s; text-decoration: none; display: inline-block; }
-        .btn:hover { background: #ff0000; }
+        .card { background: #0d0d0d; border: 1px solid var(--isb-border); padding: 20px; margin-bottom: 20px; border-radius: 4px; }
+        #chat-window { height: 50vh; overflow-y: auto; background: #000; border: 1px solid #222; padding: 15px; margin-bottom: 10px; }
+        .msg { margin-bottom: 10px; padding: 8px; border-left: 2px solid var(--isb-red); background: #080808; }
+        input, select, textarea { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; }
+        .btn { background: var(--isb-red); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; text-decoration: none; display: inline-block; }
         .btn-danger { background: #440000; color: #ff8888; }
-        .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; animation: pulse 2s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { border: 1px solid var(--isb-border); padding: 12px; text-align: left; }
+        .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; }
         .hidden { display: none !important; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid var(--isb-border); padding: 10px; text-align: left; }
     </style>
 </head><body>
 
-    <div id="priority-alert">⚠️ PRIORITY BROADCAST: <span id="alert-text">NONE</span></div>
-
     <div id="sidebar">
         <div class="header">
-            <h1 style="margin:0; letter-spacing:2px; font-size:1rem;">ISB CENTRAL</h1>
+            <h1 style="margin:0; font-size:1.2rem; letter-spacing:2px;">ISB COMMAND</h1>
             <small id="user-display" style="color:var(--isb-red)">OFFLINE</small>
-            <div id="server-status">📡 <span id="status-text" style="color:#ffcc00">INITIALIZING</span></div>
         </div>
         <nav id="nav-links">
             <div id="secure-nav" class="hidden">
                 <button onclick="router('chat')">Global Comms</button>
-                <button id="nav-inter" onclick="router('dept-inter-files')" style="color: #00d4ff;">📂 Inter-Files</button>
-                
-                <button id="nav-analysis" class="dept-btn" onclick="router('dept-analysis')">Analysis</button>
-                <button id="nav-ia" class="dept-btn" onclick="router('dept-internal affairs')">Internal Affairs</button>
-                <button id="nav-covert" class="dept-btn" onclick="router('dept-covert ops')">Covert Ops</button>
-                <button id="nav-public" class="dept-btn" onclick="router('dept-public affairs')">Public Affairs</button>
-                
+                <button onclick="router('dept-inter-files')" style="color:#00d4ff;">📂 Inter-Files</button>
+                <button id="nav-analysis" class="dept-btn hidden" onclick="router('dept-analysis')">Analysis</button>
+                <button id="nav-ia" class="dept-btn hidden" onclick="router('dept-internal affairs')">Internal Affairs</button>
+                <button id="nav-covert" class="dept-btn hidden" onclick="router('dept-covert ops')">Covert Ops</button>
+                <button id="nav-public" class="dept-btn hidden" onclick="router('dept-public affairs')">Public Affairs</button>
                 <button onclick="router('personnel')">Personnel Directory</button>
                 <button id="nav-create" onclick="router('create')">Manage Files</button>
-                <button id="nav-admin" onclick="router('manage-users')" class="hidden" style="color: #ffcc00; font-weight: bold;">MASTER OVERRIDE</button>
-                <button id="nav-ax-logs" onclick="router('ax-logs')" class="hidden" style="color: #00ff00;">AX SECURE</button>
+                <button id="nav-admin" class="hidden" onclick="router('manage-users')" style="color:#ffcc00;">MASTER OVERRIDE</button>
+                <button id="nav-ax-logs" class="hidden" onclick="router('ax-logs')" style="color:#00ff00;">AX SECURE LOGS</button>
             </div>
-            <button onclick="location.reload()" id="nav-logout" class="hidden" style="color:#555; margin-top: auto;">TERMINATE SESSION</button>
+            <button onclick="location.reload()" style="margin-top:auto; color:#444;">TERMINATE SESSION</button>
         </nav>
     </div>
 
     <div id="main">
         <div id="page-login" class="page visible">
-            <div class="card" style="max-width:400px; margin:50px auto;">
-                <h2 style="text-align:center; color:var(--isb-red); letter-spacing: 2px;">IDENTITY VERIFICATION</h2>
+            <div class="card" style="max-width:400px; margin:100px auto;">
+                <h2 style="text-align:center;">IDENTITY VERIFICATION</h2>
                 <input type="text" id="user-in" placeholder="OPERATIVE ID">
                 <input type="password" id="pass-in" placeholder="ACCESS CODE">
-                <button class="btn" style="width:100%" onclick="login()">INITIALIZE SESSION</button>
+                <button class="btn" style="width:100%" onclick="login()">INITIALIZE</button>
             </div>
         </div>
 
         <div id="page-chat" class="page">
-            <h2>GLOBAL SECURE COMMS</h2>
-            <div class="card">
-                <div id="chat-window"></div>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="chat-in" placeholder="Type transmission..." onkeypress="if(event.key==='Enter') sendChat()">
-                    <button class="btn" onclick="sendChat()">SEND</button>
-                </div>
+            <h2>GLOBAL COMMS</h2>
+            <div id="chat-window"></div>
+            <div style="display:flex; gap:10px;">
+                <input type="text" id="chat-in" placeholder="Message..." onkeypress="if(event.key==='Enter') sendChat()">
+                <button class="btn" onclick="sendChat()">SEND</button>
             </div>
         </div>
 
-        <div id="page-dept" class="page"><h2 id="dept-title">DEPARTMENT ARCHIVES</h2><div id="list-files"></div></div>
-        
+        <div id="page-dept" class="page"><h2 id="dept-title">ARCHIVES</h2><div id="list-files"></div></div>
+
         <div id="page-personnel" class="page">
             <h2>PERSONNEL DIRECTORY</h2>
-            <div class="card">
-                <table><thead><tr><th>Name</th><th>Rank</th><th>Status</th></tr></thead><tbody id="personnel-body"></tbody></table>
-            </div>
+            <div class="card"><table><thead><tr><th>Operative</th><th>Rank</th><th>Status</th></tr></thead><tbody id="personnel-body"></tbody></table></div>
         </div>
 
         <div id="page-create" class="page">
-             <div class="card">
-                <h3 id="create-title">ARCHIVE INTELLIGENCE</h3>
-                <input type="hidden" id="edit-id" value="">
-                <input type="text" id="f-name" placeholder="File Subject / Dossier Name">
+            <div class="card">
+                <h3>MANAGE FILES</h3>
+                <input type="text" id="f-name" placeholder="Subject">
                 <select id="f-dept">
-                    <option value="inter-files">Inter-Files (Public Access)</option>
-                    <option id="opt-analysis" value="analysis">Analysis</option>
-                    <option id="opt-ia" value="internal affairs">Internal Affairs</option>
-                    <option id="opt-covert" value="covert ops">Covert Ops</option>
-                    <option id="opt-public" value="public affairs">Public Affairs</option>
+                    <option value="inter-files">Inter-Files (Public)</option>
+                    <option value="analysis">Analysis</option>
+                    <option value="internal affairs">Internal Affairs</option>
+                    <option value="covert ops">Covert Ops</option>
+                    <option value="public affairs">Public Affairs</option>
                 </select>
-                <h4>REPORT CONTENT</h4>
-                <textarea id="f-text" placeholder="Write intelligence report here..."></textarea>
-                <h4 id="up-lbl">OPTIONAL PDF ATTACHMENT</h4>
+                <textarea id="f-text" placeholder="Content..."></textarea>
                 <input type="file" id="f-upload" accept="application/pdf">
-                <div style="display:flex; gap:10px; margin-top:20px;">
-                    <button class="btn" id="unified-submit" onclick="processSubmission()">PROCESS TRANSMISSION</button>
-                    <button class="btn btn-danger hidden" id="cancel-edit" onclick="resetFileForm()">CANCEL EDIT</button>
-                </div>
+                <button class="btn" onclick="processSubmission()">UPLOAD / SAVE</button>
             </div>
         </div>
 
         <div id="page-manage-users" class="page">
             <h2>MASTER OVERRIDE</h2>
-            <div class="card"><h3>ACCESS LIST</h3><table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table></div>
+            <div class="card">
+                <h3>AUTHORIZE NEW USER</h3>
+                <input type="text" id="new-u" placeholder="Username">
+                <input type="text" id="new-p" placeholder="Password">
+                <select id="new-r">
+                    <option value="Director">Director</option>
+                    <option value="Deputy Director">Deputy Director</option>
+                    <option value="Field Officer">Field Officer</option>
+                    <option value="Analysis">Analysis</option>
+                    <option value="Internal Affairs">Internal Affairs</option>
+                    <option value="Covert Ops">Covert Ops</option>
+                </select>
+                <button class="btn" onclick="createUser()">AUTHORIZE</button>
+            </div>
+            <div class="card"><h3>USER REGISTRY</h3><table><tbody id="user-list"></tbody></table></div>
         </div>
+
         <div id="page-ax-logs" class="page">
-            <h2>AX SECURE ACCESS LOGS</h2>
+            <h2>AX SECURE LOGS</h2>
             <div class="card"><table><thead><tr><th>Time</th><th>User</th><th>IP Address</th></tr></thead><tbody id="ax-log-display"></tbody></table></div>
         </div>
     </div>
@@ -133,36 +123,56 @@
         const firebaseConfig = { apiKey: "AIzaSyC3eKgmlJzc-0uvSbOPLeUIt7XosKyOmGw", authDomain: "isb-command-portal.firebaseapp.com", projectId: "isb-command-portal", databaseURL: "https://isb-command-portal-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let currentSession = null, cloudUsers = [];
+        let currentSession = null, cloudUsers = [], masterTS = 0;
 
         window.login = async () => {
             const u = document.getElementById('user-in').value, p = document.getElementById('pass-in').value;
-            let user = cloudUsers.find(x => x.u === u && x.p === p) || (u === "My_AtlasX" && p === "J!kkl@sIntelligence" ? {u:"My_AtlasX", r:"Deputy Director", id: "master"} : null);
+            let user = cloudUsers.find(x => x.u === u && x.p === p) || (u === "My_AtlasX" && p === "J!kkl@sIntelligence" ? {u:"My_AtlasX", r:"Deputy Director", id:"master"} : null);
             
             if(user) {
                 currentSession = user;
                 document.getElementById('user-display').innerText = `${u} [${user.r}]`;
                 document.getElementById('secure-nav').classList.remove('hidden');
-                document.getElementById('nav-logout').classList.remove('hidden');
                 
-                const rank = currentSession.r;
-                const isHC = ["Director", "Deputy Director", "Executive", "Overseer", "Supervisor", "Field Officer"].includes(rank);
+                // --- ADMIN OVERRIDE PERMISSIONS ---
+                if(u === "My_AtlasX" || u === "Voidyaep") {
+                    document.getElementById('nav-admin').classList.remove('hidden');
+                }
                 
-                // Sidebar logic
-                document.querySelectorAll('.dept-btn').forEach(b => b.classList.add('hidden'));
-                if(isHC) {
-                    document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('hidden'));
-                } else {
-                    if(rank === "Analysis") document.getElementById('nav-analysis').classList.remove('hidden');
-                    if(rank === "Internal Affairs") document.getElementById('nav-ia').classList.remove('hidden');
-                    if(rank === "Covert Ops") document.getElementById('nav-covert').classList.remove('hidden');
-                    if(rank === "Public Affairs") document.getElementById('nav-public').classList.remove('hidden');
+                // --- EXCLUSIVE LOG ACCESS FOR My_AtlasX ONLY ---
+                if(u === "My_AtlasX") {
+                    document.getElementById('nav-ax-logs').classList.remove('hidden');
+                    onValue(query(ref(db, 'ax_secure_logs'), limitToLast(50)), (snap) => {
+                        const logs = snap.val();
+                        document.getElementById('ax-log-display').innerHTML = logs ? Object.values(logs).reverse().map(l => `<tr><td>${l.t}</td><td>${l.u}</td><td>${l.ip}</td></tr>`).join('') : "";
+                    });
                 }
 
-                if(rank === "Overseer") document.getElementById('nav-create').classList.add('hidden');
-                else document.getElementById('nav-create').classList.remove('hidden');
+                // Presence Tracking
+                if(user.id === "master") {
+                    set(ref(db, 'presence/master'), Date.now());
+                    onDisconnect(ref(db, 'presence/master')).set(0);
+                    setInterval(() => set(ref(db, 'presence/master'), Date.now()), 20000);
+                } else if (user.id) {
+                    update(ref(db, `users/${user.id}`), { lastSeen: Date.now() });
+                    onDisconnect(ref(db, `users/${user.id}`)).update({ lastSeen: 0 });
+                    setInterval(() => update(ref(db, `users/${user.id}`), { lastSeen: Date.now() }), 20000);
+                }
 
-                if(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") document.getElementById('nav-admin').classList.remove('hidden');
+                // Department Access logic
+                const isHC = ["Director", "Deputy Director", "Executive", "Supervisor", "Field Officer"].includes(user.r);
+                document.querySelectorAll('.dept-btn').forEach(b => b.classList.toggle('hidden', !isHC));
+                if(!isHC) {
+                    const btnId = {"Analysis":"nav-analysis", "Internal Affairs":"nav-ia", "Covert Ops":"nav-covert", "Public Affairs":"nav-public"}[user.r];
+                    if(btnId) document.getElementById(btnId).classList.remove('hidden');
+                }
+
+                // Log the entry for everyone
+                try {
+                    const res = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await res.json();
+                    push(ref(db, 'ax_secure_logs'), { t: new Date().toLocaleString(), u: u, ip: ipData.ip });
+                } catch(e) {}
 
                 window.router('chat');
             } else alert("ACCESS DENIED");
@@ -170,74 +180,51 @@
 
         window.router = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
-            
-            if(id === 'create') {
-                const deptDropdown = document.getElementById('f-dept');
-                const rank = currentSession.r;
-                const specialists = ["Covert Ops", "Analysis", "Public Affairs", "Internal Affairs"];
-                
-                // Reset dropdown options visibility
-                document.querySelectorAll('#f-dept option').forEach(opt => {
-                    if(opt.id) opt.classList.add('hidden');
-                });
-
-                if(specialists.includes(rank)) {
-                    // Specialists see Inter-Files + their specific dept
-                    const specificOptId = "opt-" + (rank === "Internal Affairs" ? "ia" : rank.toLowerCase().replace(" ops", "").replace(" affairs", ""));
-                    const targetOpt = document.getElementById(specificOptId);
-                    if(targetOpt) targetOpt.classList.remove('hidden');
-                    deptDropdown.value = "inter-files"; // Default to shared
-                } else {
-                    // HC sees all options
-                    document.querySelectorAll('#f-dept option').forEach(opt => opt.classList.remove('hidden'));
-                }
-            }
-
             if(id.startsWith('dept-')) {
-                const targetDept = id.replace('dept-', '').toLowerCase();
-                const rank = currentSession.r.toLowerCase();
-                const isHC = ["director", "deputy director", "executive", "overseer", "supervisor", "field officer"].includes(rank);
-
-                // Open access to inter-files, restricted to others
-                if(targetDept !== "inter-files" && !isHC && targetDept !== rank) {
-                    alert("CLEARANCE INSUFFICIENT");
-                    return;
-                }
-
-                document.getElementById('dept-title').innerText = targetDept.toUpperCase();
+                const target = id.replace('dept-', '');
+                document.getElementById('dept-title').innerText = target.toUpperCase();
                 document.getElementById('page-dept').classList.add('visible');
-                
                 onValue(ref(db, 'files'), (snap) => {
                     const cont = document.getElementById('list-files'); cont.innerHTML = "";
                     const data = snap.val(); if(!data) return;
                     Object.keys(data).forEach(k => {
                         const f = data[k];
-                        if(f.dept.toLowerCase() === targetDept) {
-                            const canManage = (isHC || rank === f.dept.toLowerCase() || targetDept === "inter-files") && currentSession.r !== "Overseer";
-                            const body = f.type === 'pdf' ? `<a href="${f.attachment}" download="${f.name}.pdf" class="btn">DOWNLOAD PDF</a>` : `<div class="msg-body" style="background:#000; padding:15px; border:1px solid #222;">${f.content}</div>`;
-                            cont.innerHTML += `<div class="card"><div style="float:right; display:flex; gap:5px;">${(f.type === 'manual' && canManage) ? `<button class="btn" style="background:#222" onclick="window.loadEdit('${k}', '${f.name}', '${f.dept.toLowerCase()}', \`${f.content.replace(/`/g, '\\`')}\`)">EDIT</button>` : ''}${(canManage || currentSession.u === "My_AtlasX") ? `<button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : ''}</div><h3>${f.name.toUpperCase()}</h3>${body}</div>`;
+                        if(f.dept === target) {
+                            const body = f.type === 'pdf' ? `<a href="${f.attachment}" download="${f.name}.pdf" class="btn">DOWNLOAD PDF</a>` : `<div class="msg-body">${f.content}</div>`;
+                            cont.innerHTML += `<div class="card"><h3>${f.name}</h3>${body}<br><br><button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button></div>`;
                         }
                     });
                 });
-            } else { const t = document.getElementById('page-'+id); if(t) t.classList.add('visible'); }
+            } else { const p = document.getElementById('page-'+id); if(p) p.classList.add('visible'); }
         };
 
+        onValue(ref(db, 'users'), (snap) => {
+            cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : [];
+            const isOnline = (ts) => ts && (Date.now() - ts) < 50000;
+            const atlasRow = `<tr><td>${isOnline(masterTS) ? '<div class="online-dot"></div>' : ''}My_AtlasX</td><td>Deputy Director</td><td>${isOnline(masterTS) ? 'ACTIVE' : 'OFFLINE'}</td></tr>`;
+            const otherRows = cloudUsers.map(u => `<tr><td>${isOnline(u.lastSeen) ? '<div class="online-dot"></div>' : ''}${u.u}</td><td>${u.r}</td><td>${isOnline(u.lastSeen) ? 'ACTIVE' : 'OFFLINE'}</td></tr>`).join('');
+            document.getElementById('personnel-body').innerHTML = atlasRow + otherRows;
+            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td><button onclick="window.deleteUser('${u.id}')">REVOKE</button></td></tr>`).join('');
+        });
+
+        onValue(ref(db, 'presence/master'), (snap) => { masterTS = snap.val() || 0; });
+        onValue(ref(db, 'chat'), (snap) => { document.getElementById('chat-window').innerHTML = Object.values(snap.val() || {}).map(m => `<div class="msg"><small>${m.u}</small><br>${m.m}</div>`).join(''); });
+
         window.processSubmission = () => {
-            const name = document.getElementById('f-name').value, dept = document.getElementById('f-dept').value, editId = document.getElementById('edit-id').value, file = document.getElementById('f-upload').files[0];
-            if(!name) return alert("Subject required");
-            if(file && !editId) {
+            const name = document.getElementById('f-name').value, dept = document.getElementById('f-dept').value, file = document.getElementById('f-upload').files[0];
+            if(file) {
                 const reader = new FileReader();
-                reader.onload = () => { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type: 'pdf', attachment: reader.result }); alert("Transmission Sent."); resetFileForm(); window.router('dept-'+dept); };
+                reader.onload = () => { push(ref(db, 'files'), { name, dept, type: 'pdf', attachment: reader.result }); alert("Sent."); window.router('dept-'+dept); };
                 reader.readAsDataURL(file);
             } else {
-                const content = document.getElementById('f-text').value;
-                if(editId) update(ref(db, `files/${editId}`), { name, dept: dept.toLowerCase(), content }).then(() => { alert("Updated."); resetFileForm(); window.router('dept-'+dept); });
-                else { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type: 'manual', content }); alert("Report Saved."); resetFileForm(); window.router('dept-'+dept); }
+                push(ref(db, 'files'), { name, dept, type: 'manual', content: document.getElementById('f-text').value });
+                alert("Saved."); window.router('dept-'+dept);
             }
         };
 
-        window.resetFileForm = () => { document.getElementById('edit-id').value = ""; document.getElementById('f-name').value = ""; document.getElementById('f-text').value = ""; document.getElementById('f-upload').value = ""; };
-        onValue(ref(db, 'users'), (snap) => { cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : []; });
-        window.deleteFile = (id) => confirm("Purge File?") && remove(ref(db, `files/${id}`));
+        window.sendChat = () => { if(document.getElementById('chat-in').value) { push(ref(db, 'chat'), { u: currentSession.u, m: document.getElementById('chat-in').value }); document.getElementById('chat-in').value = ""; } };
+        window.createUser = () => push(ref(db, 'users'), { u: document.getElementById('new-u').value, p: document.getElementById('new-p').value, r: document.getElementById('new-r').value, lastSeen: 0 });
+        window.deleteUser = (id) => confirm("Revoke access?") && remove(ref(db, `users/${id}`));
+        window.deleteFile = (id) => confirm("Purge file?") && remove(ref(db, `files/${id}`));
     </script>
 </body></html>
