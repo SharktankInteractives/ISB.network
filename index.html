@@ -161,12 +161,10 @@
                     });
                 }
 
-                // Updated Permission Logic for Executive Director
                 const isHC = ["Director", "Deputy Director", "Executive Director", "Supervisor", "Field Officer", "Overseer"].includes(r);
                 const isAgent = (r === "Agent");
                 
                 document.querySelectorAll('.dept-btn').forEach(b => b.classList.add('hidden'));
-                
                 if(isHC) {
                     document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('hidden'));
                 } else if(!isAgent) {
@@ -210,9 +208,12 @@
                         const f = data[k];
                         if(f.dept === target) {
                             const body = f.type === 'pdf' ? `<a href="${f.attachment}" download="${f.name}.pdf" class="btn">DOWNLOAD PDF</a>` : `<div class="msg-body">${f.content}</div>`;
-                            const canDelete = !["Overseer", "Agent"].includes(currentSession.r);
-                            const deleteBtn = canDelete ? `<button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : '';
-                            cont.innerHTML += `<div class="card"><h3>${f.name}</h3>${body}<br><br>${deleteBtn}</div>`;
+                            
+                            // UPDATED PURGE RESTRICTION: Only Director, Deputy Director, and Executive Director
+                            const canPurge = ["Director", "Deputy Director", "Executive Director"].includes(currentSession.r);
+                            const deleteBtn = canPurge ? `<br><br><button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : '';
+                            
+                            cont.innerHTML += `<div class="card"><h3>${f.name}</h3>${body}${deleteBtn}</div>`;
                         }
                     });
                 });
