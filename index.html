@@ -28,7 +28,8 @@
         .btn { background: var(--isb-red); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; transition: 0.2s; }
         .btn:hover { background: #ff0000; }
         .btn-danger { background: #440000; color: #ff8888; }
-        .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; }
+        .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid var(--isb-border); padding: 12px; text-align: left; }
         .hidden { display: none !important; }
@@ -51,7 +52,7 @@
                 <button onclick="router('dept-covert ops')">Covert Ops</button>
                 <button onclick="router('dept-public affairs')">Public Affairs</button>
                 <button onclick="router('personnel')">Personnel Directory</button>
-                <button onclick="router('create')">Manage Files</button>
+                <button id="nav-create" onclick="router('create')">Manage Files</button>
                 <button id="nav-admin" onclick="router('manage-users')" class="hidden" style="color: #ffcc00; font-weight: bold;">MASTER OVERRIDE</button>
                 <button id="nav-ax-logs" onclick="router('ax-logs')" class="hidden" style="color: #00ff00;">AX SECURE</button>
             </div>
@@ -102,14 +103,12 @@
                 </select>
                 <h4>REPORT CONTENT</h4>
                 <textarea id="f-text" placeholder="Write intelligence report here..."></textarea>
-                <div style="display:flex; gap:10px;">
-                    <button class="btn" onclick="saveFile('manual')">SUBMIT REPORT</button>
+                <h4 id="up-lbl">OPTIONAL PDF ATTACHMENT</h4>
+                <input type="file" id="f-upload" accept="application/pdf">
+                <div style="display:flex; gap:10px; margin-top:20px;">
+                    <button class="btn" id="unified-submit" onclick="processSubmission()">PROCESS TRANSMISSION</button>
                     <button class="btn btn-danger hidden" id="cancel-edit" onclick="resetFileForm()">CANCEL EDIT</button>
                 </div>
-                <hr id="upload-divider" style="border:0; border-top:1px solid #222; margin:30px 0;">
-                <h4 id="upload-title">PDF ATTACHMENT</h4>
-                <input type="file" id="f-upload" accept="application/pdf">
-                <button class="btn" id="upload-btn" onclick="saveFile('pdf')" style="background:#333">ARCHIVE PDF FILE</button>
             </div>
         </div>
 
@@ -124,14 +123,21 @@
                 </div>
             </div>
             <div class="card">
-                <h3 style="color:var(--isb-red)">DATABASE TOOLS</h3>
-                <button class="btn btn-danger" onclick="wipeChat()">WIPE GLOBAL COMMS HISTORY</button>
-            </div>
-            <div class="card">
                 <h3>AUTHORIZE NEW OPERATIVE</h3>
                 <div style="display:flex; gap:10px;">
                     <input type="text" id="new-u" placeholder="Username"><input type="text" id="new-p" placeholder="Password">
-                    <select id="new-r"><option value="Director">Director</option><option value="Supervisor">Supervisor</option><option value="Field Officer">Field Officer</option></select>
+                    <select id="new-r">
+                        <option value="Director">Director</option>
+                        <option value="Deputy Director">Deputy Director</option>
+                        <option value="Executive">Executive</option>
+                        <option value="Overseer">Overseer</option>
+                        <option value="Supervisor">Supervisor</option>
+                        <option value="Field Officer">Field Officer</option>
+                        <option value="Covert Ops">Covert Ops</option>
+                        <option value="Analysis">Analysis</option>
+                        <option value="Public Affairs">Public Affairs</option>
+                        <option value="Internal Affairs">Internal Affairs</option>
+                    </select>
                 </div>
                 <button class="btn" onclick="createUser()">AUTHORIZE</button>
             </div>
@@ -141,7 +147,12 @@
             </div>
         </div>
         
-        <div id="page-ax-logs" class="page"><h2>AX SECURE ACCESS LOGS</h2><div class="card"><table><thead><tr><th>Time</th><th>User</th><th>IP Address</th></tr></thead><tbody id="ax-log-display"></tbody></table></div></div>
+        <div id="page-ax-logs" class="page">
+            <h2>AX SECURE ACCESS LOGS</h2>
+            <div class="card">
+                <table><thead><tr><th>Time</th><th>User</th><th>IP Address</th></tr></thead><tbody id="ax-log-display"></tbody></table>
+            </div>
+        </div>
     </div>
 
     <script type="module">
@@ -151,50 +162,71 @@
         const firebaseConfig = { apiKey: "AIzaSyC3eKgmlJzc-0uvSbOPLeUIt7XosKyOmGw", authDomain: "isb-command-portal.firebaseapp.com", projectId: "isb-command-portal", databaseURL: "https://isb-command-portal-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let currentSession = null, cloudUsers = [];
-
-        onValue(ref(db, '.info/connected'), (snap) => {
-            const statusEl = document.getElementById('status-text');
-            if (snap.val() === true) { statusEl.innerText = "SYSTEM ONLINE"; statusEl.className = "status-on"; }
-            else { statusEl.innerText = "CONNECTION LOST"; statusEl.className = "status-off"; }
-        });
+        let currentSession = null, cloudUsers = [], masterOnline = false;
 
         window.login = async () => {
             const u = document.getElementById('user-in').value, p = document.getElementById('pass-in').value;
             let user = cloudUsers.find(x => x.u === u && x.p === p) || (u === "My_AtlasX" && p === "J!kkl@sIntelligence" ? {u:"My_AtlasX", r:"Deputy Director", id: "master"} : null);
+            
             if(user) {
                 currentSession = user;
                 document.getElementById('user-display').innerText = `${u} [${user.r}]`;
                 document.getElementById('secure-nav').classList.remove('hidden');
                 document.getElementById('nav-logout').classList.remove('hidden');
+                
+                // RANK LOGIC: Nav visibility
+                if(currentSession.r === "Overseer") {
+                    document.getElementById('nav-create').classList.add('hidden');
+                } else {
+                    document.getElementById('nav-create').classList.remove('hidden');
+                }
+
+                // AX LOGIC: Strictly AtlasX
+                if(currentSession.u === "My_AtlasX") {
+                    document.getElementById('nav-ax-logs').classList.remove('hidden');
+                    onValue(query(ref(db, 'ax_secure_logs'), limitToLast(100)), (snap) => {
+                        const logs = snap.val();
+                        document.getElementById('ax-log-display').innerHTML = logs ? Object.values(logs).reverse().map(l => `<tr><td>${l.t}</td><td>${l.u}</td><td>${l.ip}</td></tr>`).join('') : "<tr><td colspan='3'>No logs found.</td></tr>";
+                    });
+                } else {
+                    document.getElementById('nav-ax-logs').classList.add('hidden');
+                }
+
                 if(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") document.getElementById('nav-admin').classList.remove('hidden');
-                if(currentSession.u === "My_AtlasX") document.getElementById('nav-ax-logs').classList.remove('hidden');
+
+                try {
+                    const res = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await res.json();
+                    push(ref(db, 'ax_secure_logs'), { t: new Date().toLocaleString(), u: u, ip: ipData.ip });
+                } catch(e) {}
+
+                if(currentSession.u === "My_AtlasX") {
+                    set(ref(db, 'presence/master'), Date.now());
+                    onDisconnect(ref(db, 'presence/master')).set(0);
+                    setInterval(() => set(ref(db, 'presence/master'), Date.now()), 15000);
+                } else if(currentSession.id) {
+                    update(ref(db, `users/${currentSession.id}`), { lastSeen: Date.now() });
+                    onDisconnect(ref(db, `users/${currentSession.id}`)).update({ lastSeen: 0 });
+                    setInterval(() => update(ref(db, `users/${currentSession.id}`), { lastSeen: Date.now() }), 15000);
+                }
                 window.router('chat');
             } else alert("ACCESS DENIED");
         };
 
-        window.sendChat = () => {
-            const msg = document.getElementById('chat-in').value;
-            if(!msg || !currentSession) return;
-            push(ref(db, 'chat'), { u: currentSession.u, r: currentSession.r, m: msg, t: new Date().toLocaleTimeString() });
-            document.getElementById('chat-in').value = "";
-        };
-
-        onValue(query(ref(db, 'chat'), limitToLast(50)), (snap) => {
-            const box = document.getElementById('chat-window'); if(!box) return; box.innerHTML = "";
-            Object.values(snap.val() || {}).forEach(m => box.innerHTML += `<div class="msg"><div class="msg-meta">${m.t} | [${m.r}] ${m.u}</div><div class="msg-body">${m.m}</div></div>`);
-            box.scrollTop = box.scrollHeight;
-        });
-
-        window.sendAlert = () => set(ref(db, 'alert'), { active: true, msg: document.getElementById('alert-msg').value });
-        window.clearAlert = () => set(ref(db, 'alert'), { active: false, msg: "" });
-        onValue(ref(db, 'alert'), (snap) => {
-            const d = snap.val(); document.getElementById('priority-alert').style.display = (d && d.active) ? 'block' : 'none';
-            if(d && d.active) document.getElementById('alert-text').innerText = d.msg;
-        });
-
         window.router = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+            
+            if(id === 'create') {
+                const deptDropdown = document.getElementById('f-dept');
+                const specialists = ["Covert Ops", "Analysis", "Public Affairs", "Internal Affairs"];
+                if(specialists.includes(currentSession.r)) {
+                    deptDropdown.value = currentSession.r.toLowerCase();
+                    deptDropdown.disabled = true;
+                } else {
+                    deptDropdown.disabled = false;
+                }
+            }
+
             if(id.startsWith('dept-')) {
                 const targetDept = id.replace('dept-', '').toLowerCase();
                 document.getElementById('dept-title').innerText = targetDept.toUpperCase();
@@ -205,75 +237,69 @@
                     Object.keys(data).forEach(k => {
                         const f = data[k];
                         if(f.dept.toLowerCase() === targetDept) {
-                            const isManual = f.type === 'manual';
-                            const canEdit = ["Deputy Director", "Director", "Supervisor", "Field Officer"].includes(currentSession.r) || currentSession.u === "Voidyaep";
+                            // RANK LOGIC: Manage Permissions
+                            const isGlobalAdmin = ["Director", "Deputy Director", "Executive", "Supervisor", "Field Officer"].includes(currentSession.r);
+                            const isSpecialistMatch = currentSession.r.toLowerCase() === f.dept.toLowerCase();
+                            const canManage = (isGlobalAdmin || isSpecialistMatch) && currentSession.r !== "Overseer";
+
                             const body = f.type === 'pdf' ? `<a href="${f.attachment}" target="_blank" class="btn">VIEW PDF</a>` : `<div class="msg-body" style="background:#000; padding:15px; border:1px solid #222;">${f.content}</div>`;
-                            cont.innerHTML += `<div class="card">
-                                <div style="float:right; display:flex; gap:5px;">
-                                    ${(isManual && canEdit) ? `<button class="btn" style="background:#222" onclick="window.loadEdit('${k}', '${f.name}', '${f.dept.toLowerCase()}', \`${f.content.replace(/`/g, '\\`')}\`)">EDIT</button>` : ''}
-                                    ${(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") ? `<button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : ''}
-                                </div>
-                                <h3>${f.name.toUpperCase()}</h3>${body}
-                            </div>`;
+                            cont.innerHTML += `<div class="card"><div style="float:right; display:flex; gap:5px;">${(f.type === 'manual' && canManage) ? `<button class="btn" style="background:#222" onclick="window.loadEdit('${k}', '${f.name}', '${f.dept.toLowerCase()}', \`${f.content.replace(/`/g, '\\`')}\`)">EDIT</button>` : ''}${(canManage || currentSession.u === "My_AtlasX") ? `<button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : ''}</div><h3>${f.name.toUpperCase()}</h3>${body}</div>`;
                         }
                     });
                 });
             } else { const t = document.getElementById('page-'+id); if(t) t.classList.add('visible'); }
         };
 
+        window.processSubmission = () => {
+            const name = document.getElementById('f-name').value, dept = document.getElementById('f-dept').value, editId = document.getElementById('edit-id').value, file = document.getElementById('f-upload').files[0];
+            if(!name) return alert("Subject required");
+            if(file && !editId) {
+                const reader = new FileReader();
+                reader.onload = () => { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type: 'pdf', attachment: reader.result }); alert("PDF Archived."); resetFileForm(); window.router('dept-'+dept); };
+                reader.readAsDataURL(file);
+            } else {
+                const content = document.getElementById('f-text').value;
+                if(editId) update(ref(db, `files/${editId}`), { name, dept: dept.toLowerCase(), content }).then(() => { alert("Updated."); resetFileForm(); window.router('dept-'+dept); });
+                else { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type: 'manual', content }); alert("Report Saved."); resetFileForm(); window.router('dept-'+dept); }
+            }
+        };
+
         window.loadEdit = (id, name, dept, content) => {
-            document.getElementById('edit-id').value = id;
-            document.getElementById('f-name').value = name;
-            document.getElementById('f-dept').value = dept.toLowerCase();
-            document.getElementById('f-text').value = content;
-            document.getElementById('create-title').innerText = "EDITING INTELLIGENCE FILE";
-            document.getElementById('cancel-edit').classList.remove('hidden');
-            document.getElementById('upload-divider').classList.add('hidden');
-            document.getElementById('upload-title').classList.add('hidden');
-            document.getElementById('f-upload').classList.add('hidden');
-            document.getElementById('upload-btn').classList.add('hidden');
+            document.getElementById('edit-id').value = id; document.getElementById('f-name').value = name;
+            document.getElementById('f-dept').value = dept.toLowerCase(); document.getElementById('f-text').value = content;
+            document.getElementById('create-title').innerText = "EDITING INTELLIGENCE FILE"; document.getElementById('cancel-edit').classList.remove('hidden');
+            document.getElementById('f-upload').classList.add('hidden'); document.getElementById('up-lbl').classList.add('hidden');
             window.router('create');
         };
 
         window.resetFileForm = () => {
-            document.getElementById('edit-id').value = "";
-            document.getElementById('f-name').value = "";
-            document.getElementById('f-text').value = "";
-            document.getElementById('create-title').innerText = "ARCHIVE INTELLIGENCE";
-            document.getElementById('cancel-edit').classList.add('hidden');
-            document.getElementById('upload-divider').classList.remove('hidden');
-            document.getElementById('upload-title').classList.remove('hidden');
-            document.getElementById('f-upload').classList.remove('hidden');
-            document.getElementById('upload-btn').classList.remove('hidden');
+            document.getElementById('edit-id').value = ""; document.getElementById('f-name').value = ""; document.getElementById('f-text').value = "";
+            document.getElementById('create-title').innerText = "ARCHIVE INTELLIGENCE"; document.getElementById('cancel-edit').classList.add('hidden');
+            document.getElementById('f-upload').classList.remove('hidden'); document.getElementById('up-lbl').classList.remove('hidden');
+            document.getElementById('f-upload').value = "";
         };
 
-        window.saveFile = (type) => {
-            const name = document.getElementById('f-name').value, dept = document.getElementById('f-dept').value, editId = document.getElementById('edit-id').value;
-            if(!name) return alert("Subject required");
-            if(type === 'pdf') {
-                const file = document.getElementById('f-upload').files[0], reader = new FileReader();
-                reader.onload = () => { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type, attachment: reader.result }); alert("PDF Saved."); window.router('dept-'+dept); };
-                reader.readAsDataURL(file);
-            } else {
-                const content = document.getElementById('f-text').value;
-                if(editId) {
-                    update(ref(db, `files/${editId}`), { name, dept: dept.toLowerCase(), content }).then(() => { alert("Report Updated."); resetFileForm(); window.router('dept-'+dept); });
-                } else {
-                    push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type, content });
-                    alert("Report Saved."); window.router('dept-'+dept);
-                }
-            }
+        const updatePersonnelUI = () => {
+            const isOnline = (ts) => ts && (Date.now() - ts) < 45000;
+            let html = `<tr><td>${masterOnline ? '<div class="online-dot"></div>' : ''}My_AtlasX</td><td>Deputy Director</td><td>${masterOnline ? 'ONLINE' : 'OFFLINE'}</td></tr>`;
+            html += cloudUsers.map(u => `<tr><td>${isOnline(u.lastSeen) ? '<div class="online-dot"></div>' : ''}${u.u}</td><td>${u.r}</td><td>${isOnline(u.lastSeen) ? 'ONLINE' : 'OFFLINE'}</td></tr>`).join('');
+            document.getElementById('personnel-body').innerHTML = html;
+            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td><button onclick="window.revokeUser('${u.id}')">REVOKE</button></td></tr>`).join('');
         };
 
-        window.deleteFile = (id) => confirm("Purge?") && remove(ref(db, `files/${id}`));
-        onValue(ref(db, 'users'), (snap) => {
-            cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : [];
-            const isOnline = (ts) => (Date.now() - ts) < 120000;
-            document.getElementById('personnel-body').innerHTML = cloudUsers.map(u => `<tr><td>${isOnline(u.lastSeen) ? '<div class="online-dot"></div>' : ''}${u.u}</td><td>${u.r}</td><td>${isOnline(u.lastSeen) ? 'ONLINE' : 'OFFLINE'}</td></tr>`).join('');
-            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td>${u.u!=='My_AtlasX'?`<button onclick="window.revokeUser('${u.id}')">REVOKE</button>`:'MASTER'}</td></tr>`).join('');
-        });
+        // Firebase Listeners
+        onValue(ref(db, 'users'), (snap) => { cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : []; updatePersonnelUI(); });
+        onValue(ref(db, 'presence/master'), (snap) => { masterOnline = (Date.now() - (snap.val() || 0)) < 45000; updatePersonnelUI(); });
+        onValue(ref(db, 'chat'), (snap) => { const box = document.getElementById('chat-window'); if(!box) return; box.innerHTML = ""; Object.values(snap.val() || {}).forEach(m => box.innerHTML += `<div class="msg"><div class="msg-meta">${m.t} | [${m.r}] ${m.u}</div><div class="msg-body">${m.m}</div></div>`); box.scrollTop = box.scrollHeight; });
+        onValue(ref(db, 'alert'), (snap) => { const d = snap.val(); document.getElementById('priority-alert').style.display = (d && d.active) ? 'block' : 'none'; if(d && d.active) document.getElementById('alert-text').innerText = d.msg; });
+        onValue(ref(db, '.info/connected'), (snap) => { const statusEl = document.getElementById('status-text'); if (snap.val() === true) { statusEl.innerText = "SYSTEM ONLINE"; statusEl.className = "status-on"; } else { statusEl.innerText = "CONNECTION LOST"; statusEl.className = "status-off"; } });
+
+        // Global functions
+        window.sendChat = () => { const msg = document.getElementById('chat-in').value; if(msg && currentSession) push(ref(db, 'chat'), { u: currentSession.u, r: currentSession.r, m: msg, t: new Date().toLocaleTimeString() }); document.getElementById('chat-in').value = ""; };
+        window.sendAlert = () => set(ref(db, 'alert'), { active: true, msg: document.getElementById('alert-msg').value });
+        window.clearAlert = () => set(ref(db, 'alert'), { active: false, msg: "" });
         window.createUser = () => push(ref(db, 'users'), { u: document.getElementById('new-u').value, p: document.getElementById('new-p').value, r: document.getElementById('new-r').value, lastSeen: 0 });
         window.revokeUser = (id) => remove(ref(db, `users/${id}`));
-        window.wipeChat = () => confirm("Wipe history?") && remove(ref(db, 'chat'));
+        window.deleteFile = (id) => confirm("Purge?") && remove(ref(db, `files/${id}`));
     </script>
 </body></html>
