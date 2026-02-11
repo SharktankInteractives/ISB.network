@@ -5,36 +5,32 @@
     <style>
         :root { --isb-red: #cc0000; --isb-bg: #050505; --isb-panel: #111; --isb-border: #2a2a2a; --text: #e0e0e0; }
         body { background: var(--isb-bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-        
         #priority-alert { display: none; background: var(--isb-red); color: white; padding: 15px; text-align: center; font-weight: bold; border-bottom: 2px solid white; animation: blinker 1.5s linear infinite; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; }
         @keyframes blinker { 50% { opacity: 0.7; } }
-        
         #sidebar { width: 280px; background: var(--isb-panel); border-right: 1px solid var(--isb-border); display: flex; flex-direction: column; height: 100%; }
         .header { padding: 20px; border-bottom: 2px solid var(--isb-red); text-align: center; }
-        
         #server-status { font-size: 0.65rem; margin-top: 5px; font-weight: bold; letter-spacing: 1px; }
         .status-on { color: #00ff00; }
         .status-off { color: #ff0000; }
-
+        nav { flex-grow: 1; overflow-y: auto; }
         nav button { width: 100%; background: none; border: none; color: #888; padding: 12px 20px; text-align: left; cursor: pointer; border-bottom: 1px solid #1a1a1a; font-size: 0.85rem; }
         nav button:hover, nav button.active { background: #1a1a1a; color: #fff; border-left: 4px solid var(--isb-red); }
-
         #main { flex-grow: 1; padding: 80px 40px 40px; overflow-y: auto; position: relative; }
         .page { display: none; max-width: 1000px; margin: 0 auto; }
         .page.visible { display: block; }
         .card { background: #0d0d0d; border: 1px solid var(--isb-border); padding: 20px; margin-bottom: 20px; border-radius: 4px; position: relative; }
-        
         #chat-window { height: 60vh; overflow-y: auto; background: #000; border: 1px solid #222; padding: 20px; margin-bottom: 10px; display: flex; flex-direction: column; }
         .msg { margin-bottom: 15px; padding: 10px; background: #0a0a0a; border-left: 3px solid var(--isb-red); }
         .msg-meta { font-size: 0.7rem; color: var(--isb-red); font-weight: bold; margin-bottom: 5px; }
-        .msg-body { font-family: 'Courier New', monospace; color: #ccc; }
-
+        .msg-body { font-family: 'Courier New', monospace; color: #ccc; word-wrap: break-word; }
         input, select, textarea { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; box-sizing: border-box; }
-        .btn { background: var(--isb-red); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; }
+        textarea { height: 150px; resize: vertical; }
+        .btn { background: var(--isb-red); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn:hover { background: #ff0000; }
         .btn-danger { background: #440000; color: #ff8888; }
-
-        .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; }
-        table { width: 100%; border-collapse: collapse; }
+        .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.3; } 100% { opacity: 1; } }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { border: 1px solid var(--isb-border); padding: 12px; text-align: left; }
         .hidden { display: none !important; }
     </style>
@@ -50,14 +46,14 @@
         </div>
         <nav id="nav-links">
             <div id="secure-nav" class="hidden">
-                <button onclick="router('chat')">Global Comms</button>
+                <button onclick="router('chat')" id="nav-chat">Global Comms</button>
                 <button onclick="router('dept-Analysis')">Analysis</button>
                 <button onclick="router('dept-Internal Affairs')">Internal Affairs</button>
                 <button onclick="router('dept-Covert Operations')">Covert Ops</button>
                 <button onclick="router('dept-Public Affairs')">Public Affairs</button>
                 <button onclick="router('personnel')">Personnel Directory</button>
                 <button onclick="router('create')">Manage Files</button>
-                <button id="nav-admin" onclick="router('manage-users')" class="hidden" style="color: #ffcc00;">MASTER CONTROL</button>
+                <button id="nav-admin" onclick="router('manage-users')" class="hidden" style="color: #ffcc00; font-weight: bold;">MASTER OVERRIDE</button>
                 <button id="nav-ax-logs" onclick="router('ax-logs')" class="hidden" style="color: #00ff00;">AX SECURE</button>
             </div>
             <button onclick="location.reload()" id="nav-logout" class="hidden" style="color:#555; margin-top: auto;">TERMINATE SESSION</button>
@@ -67,7 +63,7 @@
     <div id="main">
         <div id="page-login" class="page visible">
             <div class="card" style="max-width:400px; margin:50px auto;">
-                <h2 style="text-align:center; color:var(--isb-red)">IDENTITY VERIFICATION</h2>
+                <h2 style="text-align:center; color:var(--isb-red); letter-spacing: 2px;">IDENTITY VERIFICATION</h2>
                 <input type="text" id="user-in" placeholder="OPERATIVE ID">
                 <input type="password" id="pass-in" placeholder="ACCESS CODE">
                 <button class="btn" style="width:100%" onclick="login()">INITIALIZE SESSION</button>
@@ -94,38 +90,53 @@
             </div>
         </div>
 
-        <div id="page-manage-users" class="page">
-            <h2>MASTER OVERRIDE</h2>
-            <div class="card">
-                <h3 style="color:var(--isb-red)">SYSTEM TOOLS</h3>
-                <button class="btn btn-danger" onclick="wipeChat()">WIPE GLOBAL COMMS</button>
-            </div>
-            <div class="card">
-                <h3>AUTHORIZE OPERATIVE</h3>
-                <div style="display:flex; gap:10px;"><input type="text" id="new-u" placeholder="User"><input type="text" id="new-p" placeholder="Pass">
-                <select id="new-r"><option value="Director">Director</option><option value="Field Officer">Field Officer</option></select></div>
-                <button class="btn" onclick="createUser()">AUTHORIZE</button>
-            </div>
-            <div class="card"><table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table></div>
-        </div>
-
         <div id="page-create" class="page">
              <div class="card">
-                <h3>CREATE INTELLIGENCE FILE</h3>
-                <input type="text" id="f-name" placeholder="File Subject">
+                <h3>ARCHIVE INTELLIGENCE</h3>
+                <input type="text" id="f-name" placeholder="File Subject / Dossier Name">
                 <select id="f-dept">
                     <option value="Analysis">Analysis</option><option value="Internal Affairs">Internal Affairs</option>
-                    <option value="Covert Operations">Covert Ops</option><option value="Public Affairs">Public Affairs</option>
+                    <option value="Covert Operations">Covert Operations</option><option value="Public Affairs">Public Affairs</option>
                 </select>
-                <textarea id="f-text" placeholder="Type manual intel here..."></textarea>
-                <button class="btn" onclick="saveFile('manual')">SUBMIT REPORT</button>
-                <hr style="border:0; border-top:1px solid #222; margin:20px 0;">
+                <h4>MANUAL REPORT</h4>
+                <textarea id="f-text" placeholder="Write intelligence report here..."></textarea>
+                <button class="btn" onclick="saveFile('manual')">SUBMIT TEXT REPORT</button>
+                <hr style="border:0; border-top:1px solid #222; margin:30px 0;">
+                <h4>PDF ATTACHMENT</h4>
                 <input type="file" id="f-upload" accept="application/pdf">
-                <button class="btn" onclick="saveFile('pdf')" style="background:#333">UPLOAD PDF</button>
+                <button class="btn" onclick="saveFile('pdf')" style="background:#333">ARCHIVE PDF FILE</button>
+            </div>
+        </div>
+
+        <div id="page-manage-users" class="page">
+            <h2>MASTER OVERRIDE</h2>
+            <div class="card" style="border: 1px solid var(--isb-red);">
+                <h3 style="color:var(--isb-red)">🔴 SYSTEM BROADCAST</h3>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="alert-msg" placeholder="Type emergency message...">
+                    <button class="btn" onclick="sendAlert()">SEND ALERT</button>
+                    <button class="btn btn-danger" onclick="clearAlert()">CLEAR</button>
+                </div>
+            </div>
+            <div class="card">
+                <h3 style="color:var(--isb-red)">DATABASE TOOLS</h3>
+                <button class="btn btn-danger" onclick="wipeChat()">WIPE GLOBAL COMMS HISTORY</button>
+            </div>
+            <div class="card">
+                <h3>AUTHORIZE NEW OPERATIVE</h3>
+                <div style="display:flex; gap:10px;">
+                    <input type="text" id="new-u" placeholder="Username"><input type="text" id="new-p" placeholder="Password">
+                    <select id="new-r"><option value="Director">Director</option><option value="Field Officer">Field Officer</option><option value="Analysis">Analysis</option></select>
+                </div>
+                <button class="btn" onclick="createUser()">AUTHORIZE</button>
+            </div>
+            <div class="card">
+                <h3>ACCESS LIST</h3>
+                <table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table>
             </div>
         </div>
         
-        <div id="page-ax-logs" class="page"><h2>AX SECURE</h2><div class="card"><table><thead><tr><th>Time</th><th>User</th><th>IP</th></tr></thead><tbody id="ax-log-display"></tbody></table></div></div>
+        <div id="page-ax-logs" class="page"><h2>AX SECURE ACCESS LOGS</h2><div class="card"><table><thead><tr><th>Time</th><th>User</th><th>IP Address</th></tr></thead><tbody id="ax-log-display"></tbody></table></div></div>
     </div>
 
     <script type="module">
@@ -137,41 +148,42 @@
         const db = getDatabase(app);
         let currentSession = null, cloudUsers = [];
 
-        // Server Status Monitor
         const statusEl = document.getElementById('status-text');
         onValue(ref(db, '.info/connected'), (snap) => {
-            if (snap.val() === true) {
-                statusEl.innerText = "SYSTEM ONLINE";
-                statusEl.className = "status-on";
-            } else {
-                statusEl.innerText = "CONNECTION LOST";
-                statusEl.className = "status-off";
-            }
+            if (snap.val() === true) { statusEl.innerText = "SYSTEM ONLINE"; statusEl.className = "status-on"; }
+            else { statusEl.innerText = "CONNECTION LOST"; statusEl.className = "status-off"; }
         });
 
         window.login = async () => {
             const u = document.getElementById('user-in').value, p = document.getElementById('pass-in').value;
-            let user = cloudUsers.find(x => x.u === u && x.p === p) || (u === "My_AtlasX" && p === "J!kkl@sIntelligence" ? {u:"My_AtlasX", r:"Deputy Director", id: "master"} : null);
+            let user = cloudUsers.find(x => x.u === u && x.p === p) || 
+                       (u === "My_AtlasX" && p === "J!kkl@sIntelligence" ? {u:"My_AtlasX", r:"Deputy Director", id: "master"} : null);
 
             if(user) {
                 currentSession = user;
                 document.getElementById('user-display').innerText = `${u} [${user.r}]`;
                 document.getElementById('secure-nav').classList.remove('hidden');
                 document.getElementById('nav-logout').classList.remove('hidden');
-                if(currentSession.u === "My_AtlasX") { document.getElementById('nav-admin').classList.remove('hidden'); document.getElementById('nav-ax-logs').classList.remove('hidden'); }
+                
+                // PERMISSION LOGIC
+                if(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") {
+                    document.getElementById('nav-admin').classList.remove('hidden');
+                }
+                if(currentSession.u === "My_AtlasX") {
+                    document.getElementById('nav-ax-logs').classList.remove('hidden');
+                }
                 
                 if(currentSession.id !== "master") {
                     update(ref(db, `users/${currentSession.id}`), { lastSeen: Date.now() });
-                    // Offline on disconnect
                     onDisconnect(ref(db, `users/${currentSession.id}/lastSeen`)).set(0);
+                    setInterval(() => update(ref(db, `users/${currentSession.id}`), { lastSeen: Date.now() }), 30000);
                 }
                 
                 try {
-                    const response = await fetch('https://api.ipify.org?format=json');
-                    const ipData = await response.json();
+                    const res = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await res.json();
                     push(ref(db, 'ax_secure_logs'), { t: new Date().toLocaleString(), u: u, ip: ipData.ip });
                 } catch(e) {}
-
                 window.router('chat');
             } else alert("ACCESS DENIED");
         };
@@ -192,13 +204,19 @@
             box.scrollTop = box.scrollHeight;
         });
 
-        window.wipeChat = () => confirm("Wipe all history?") && remove(ref(db, 'chat'));
+        window.sendAlert = () => set(ref(db, 'alert'), { active: true, msg: document.getElementById('alert-msg').value });
+        window.clearAlert = () => set(ref(db, 'alert'), { active: false, msg: "" });
+        onValue(ref(db, 'alert'), (snap) => {
+            const d = snap.val(); document.getElementById('priority-alert').style.display = (d && d.active) ? 'block' : 'none';
+            if(d && d.active) document.getElementById('alert-text').innerText = d.msg;
+        });
+
+        window.wipeChat = () => confirm("Purge history?") && remove(ref(db, 'chat'));
 
         window.router = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
             const target = document.getElementById('page-'+id);
             if(target) target.classList.add('visible');
-            
             if(id.startsWith('dept-')) {
                 const dept = id.replace('dept-', '').replace('%20', ' ');
                 document.getElementById('dept-title').innerText = dept.toUpperCase();
@@ -207,7 +225,8 @@
                     Object.keys(snap.val() || {}).forEach(k => {
                         const f = snap.val()[k];
                         if(f.dept.toLowerCase() === dept.toLowerCase()) {
-                            cont.innerHTML += `<div class="card"><h3>${f.name}</h3>${f.type === 'pdf' ? `<a href="${f.attachment}" target="_blank" class="btn">OPEN PDF</a>` : `<p>${f.content}</p>`}</div>`;
+                            const btn = f.type === 'pdf' ? `<a href="${f.attachment}" target="_blank" class="btn">VIEW PDF</a>` : `<div class="card" style="background:#000; font-family:monospace; border:1px solid #333;">${f.content}</div>`;
+                            cont.innerHTML += `<div class="card">${(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") ? `<button style="float:right" onclick="window.deleteFile('${k}')">PURGE</button>` : ''}<h3>${f.name}</h3>${btn}</div>`;
                         }
                     });
                 });
@@ -218,21 +237,24 @@
             cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : [];
             const isOnline = (ts) => (Date.now() - ts) < 120000;
             document.getElementById('personnel-body').innerHTML = cloudUsers.map(u => `<tr><td>${isOnline(u.lastSeen) ? '<div class="online-dot"></div>' : ''}${u.u}</td><td>${u.r}</td><td>${isOnline(u.lastSeen) ? 'ONLINE' : 'OFFLINE'}</td></tr>`).join('');
-            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td><button onclick="window.revokeUser('${u.id}')">REVOKE</button></td></tr>`).join('');
+            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td>${u.u !== 'My_AtlasX' ? `<button onclick="window.revokeUser('${u.id}')">REVOKE</button>` : 'PROTECTED'}</td></tr>`).join('');
         });
 
         window.saveFile = (type) => {
             const name = document.getElementById('f-name').value, dept = document.getElementById('f-dept').value;
             if(type === 'pdf') {
                 const file = document.getElementById('f-upload').files[0], reader = new FileReader();
-                reader.onload = () => push(ref(db, 'files'), { name, dept, type, attachment: reader.result });
+                reader.onload = () => { push(ref(db, 'files'), { name, dept, type, attachment: reader.result }); alert("Saved."); };
                 reader.readAsDataURL(file);
-            } else { push(ref(db, 'files'), { name, dept, type, content: document.getElementById('f-text').value }); }
-            alert("Report Filed.");
+            } else {
+                push(ref(db, 'files'), { name, dept, type, content: document.getElementById('f-text').value });
+                alert("Logged.");
+            }
         };
 
+        window.deleteFile = (id) => confirm("Purge file?") && remove(ref(db, `files/${id}`));
         window.createUser = () => push(ref(db, 'users'), { u: document.getElementById('new-u').value, p: document.getElementById('new-p').value, r: document.getElementById('new-r').value, lastSeen: 0 });
-        window.revokeUser = (id) => remove(ref(db, `users/${id}`));
+        window.revokeUser = (id) => confirm("Revoke?") && remove(ref(db, `users/${id}`));
         onValue(query(ref(db, 'ax_secure_logs'), limitToLast(20)), (snap) => {
             document.getElementById('ax-log-display').innerHTML = Object.values(snap.val() || {}).reverse().map(l => `<tr><td>${l.t}</td><td>${l.u}</td><td>${l.ip}</td></tr>`).join('');
         });
