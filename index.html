@@ -1,169 +1,101 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
+<!DOCTYPE html><html lang="en"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ISB CENTRAL COMMAND</title>
     <style>
-        :root {
-            --isb-red: #cc0000;
-            --isb-warn: #ffcc00;
-            --isb-bg: #050505;
-            --isb-panel: #111;
-            --isb-border: #2a2a2a;
-            --text: #e0e0e0;
-        }
-
+        :root { --isb-red: #cc0000; --isb-bg: #050505; --isb-panel: #111; --isb-border: #2a2a2a; --text: #e0e0e0; }
         body { background: var(--isb-bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
-
-        /* STATUS INDICATORS */
-        #sync-status { position: fixed; bottom: 20px; right: 20px; width: 14px; height: 14px; border-radius: 50%; background: #440000; border: 2px solid rgba(255,255,255,0.3); transition: 0.5s; z-index: 9999; }
-        .sync-online { background: #00ff00 !important; box-shadow: 0 0 15px #00ff00; }
-
-        /* SIDEBAR */
-        #sidebar { width: 300px; background: var(--isb-panel); border-right: 1px solid var(--isb-border); display: flex; flex-direction: column; flex-shrink: 0; }
+        #priority-alert { display: none; background: var(--isb-red); color: white; padding: 15px; text-align: center; font-weight: bold; border-bottom: 2px solid white; animation: blinker 1.5s linear infinite; z-index: 10000; position: fixed; top: 0; left: 0; width: 100%; }
+        @keyframes blinker { 50% { opacity: 0.7; } }
+        #sidebar { width: 300px; background: var(--isb-panel); border-right: 1px solid var(--isb-border); display: flex; flex-direction: column; }
         .header { padding: 30px 20px; border-bottom: 2px solid var(--isb-red); text-align: center; }
-        nav { flex-grow: 1; overflow-y: auto; }
-        nav button { width: 100%; background: none; border: none; color: #888; padding: 15px 25px; text-align: left; cursor: pointer; border-bottom: 1px solid #1a1a1a; transition: 0.2s; }
+        nav button { width: 100%; background: none; border: none; color: #888; padding: 12px 25px; text-align: left; cursor: pointer; border-bottom: 1px solid #1a1a1a; font-size: 0.9rem; }
         nav button:hover, nav button.active { background: #1a1a1a; color: #fff; border-left: 4px solid var(--isb-red); }
-
-        /* MAIN CONTENT */
-        #main { flex-grow: 1; padding: 60px 40px 40px; overflow-y: auto; }
+        #main { flex-grow: 1; padding: 80px 40px 40px; overflow-y: auto; }
         .page { display: none; max-width: 1000px; margin: 0 auto; }
         .page.visible { display: block; }
         .card { background: #0d0d0d; border: 1px solid var(--isb-border); padding: 25px; margin-bottom: 20px; border-radius: 4px; position: relative; }
-
-        /* CHAT SYSTEM */
-        #chat-box { height: 400px; overflow-y: auto; background: #000; border: 1px solid var(--isb-border); padding: 15px; margin-bottom: 10px; font-family: monospace; }
-        
-        /* LOGS */
-        #log-display { height: 500px; overflow-y: auto; font-family: monospace; color: #00ff00; font-size: 0.85rem; line-height: 1.4; background: #000; padding: 10px; }
-
-        input, select, textarea { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; box-sizing: border-box; }
+        input, select { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; box-sizing: border-box; }
         .btn { background: var(--isb-red); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; }
-        .btn-delete { background: #440000; color: #ff8888; border: none; padding: 5px 10px; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 0.7rem; }
-
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         th, td { border: 1px solid var(--isb-border); padding: 12px; text-align: left; }
-        th { color: var(--isb-red); font-size: 0.75rem; text-transform: uppercase; background: #161616; }
-
         .hidden { display: none !important; }
-        .file-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; margin-left: 10px; vertical-align: middle; font-weight: bold; }
-        .tag-ts { background: var(--isb-red); color: white; }
-        .tag-c { background: var(--isb-warn); color: black; }
+        #ax-log-display { font-family: monospace; color: #00ff00; }
     </style>
-</head>
-<body>
+</head><body>
 
-    <div id="sync-status"></div>
+    <div id="priority-alert">⚠️ PRIORITY BROADCAST: <span id="alert-text">NONE</span></div>
 
     <div id="sidebar">
         <div class="header">
-            <h1 style="margin:0; letter-spacing:3px; font-size:1.2rem;">ISB COMMAND</h1>
-            <small id="user-display" style="color:var(--isb-red)">SECURE TERMINAL</small>
+            <h1 style="margin:0; letter-spacing:3px; font-size:1.1rem;">ISB COMMAND</h1>
+            <small id="user-display" style="color:var(--isb-red)">OFFLINE</small>
         </div>
         <nav id="nav-links">
             <button onclick="router('public')" id="nav-public" class="active">Public Archives</button>
-            
             <div id="secure-nav" class="hidden">
-                <button onclick="router('files')">Intelligence Files</button>
+                <button id="nav-Analysis" onclick="router('dept-Analysis')">Analysis</button>
+                <button id="nav-Internal Affairs" onclick="router('dept-Internal Affairs')">Internal Affairs</button>
+                <button id="nav-Covert Operations" onclick="router('dept-Covert Operations')">Covert Operations</button>
+                <button id="nav-Public Affairs" onclick="router('dept-Public Affairs')">Public Affairs</button>
                 <button onclick="router('personnel')">Personnel Directory</button>
-                <button onclick="router('chat')" style="color:var(--isb-warn)">💬 SECURE CHAT</button>
-                <button onclick="router('manage-files')" id="nav-officer" class="hidden">File Management</button>
-                <button onclick="router('logs')" id="nav-logs" class="hidden">System Logs</button>
-                <button onclick="router('manage-users')" id="nav-hicom" class="hidden" style="color: var(--isb-warn);">Access Management</button>
+                <button id="nav-create" onclick="router('create')">Manage Files</button>
+                <button id="nav-admin" onclick="router('manage-users')" class="hidden" style="color: #ffcc00;">MASTER OVERRIDE</button>
+                <button id="nav-ax-logs" onclick="router('ax-logs')" class="hidden" style="color: #00ff00; background: #002200;">AX LOGS</button>
             </div>
-
             <button onclick="router('login')" id="nav-login" style="margin-top:20px; color:var(--isb-red);">[ ACCESS TERMINAL ]</button>
-            <button onclick="terminateSession()" id="nav-logout" class="hidden" style="color: #666;">TERMINATE SESSION</button>
+            <button onclick="location.reload()" id="nav-logout" class="hidden">TERMINATE SESSION</button>
         </nav>
     </div>
 
     <div id="main">
-        <div id="page-public" class="page visible">
-            <h2>PUBLIC RECORDS</h2>
-            <div id="list-public"></div>
-        </div>
-
-        <div id="page-files" class="page">
-            <h2>INTELLIGENCE DATABASE</h2>
-            <div id="list-secure"></div>
-        </div>
-
-        <div id="page-chat" class="page">
-            <h2>SECURE TRANSMISSIONS</h2>
-            <div class="card">
-                <div id="chat-box"></div>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="chat-input" placeholder="Secure message..." onkeydown="if(event.key==='Enter') sendChat()">
-                    <button class="btn" onclick="sendChat()">SEND</button>
-                </div>
-            </div>
-        </div>
-
-        <div id="page-personnel" class="page">
-            <h2>PERSONNEL DIRECTORY</h2>
+        <div id="page-ax-logs" class="page">
+            <h2>AX LOGS: ACCESS & IP TRACKING</h2>
             <div class="card">
                 <table>
-                    <thead><tr><th>Operative</th><th>Rank</th></tr></thead>
-                    <tbody id="personnel-body"></tbody>
+                    <thead><tr><th>Timestamp</th><th>Operative</th><th>Rank</th><th>IP Address</th><th>Device Info</th></tr></thead>
+                    <tbody id="ax-log-display"></tbody>
                 </table>
             </div>
         </div>
 
-        <div id="page-manage-files" class="page">
-            <h2>FILE ARCHIVE SYSTEM</h2>
-            <div class="card">
-                <h3>CREATE NEW ENTRY</h3>
-                <input type="text" id="f-name" placeholder="File Subject">
-                <select id="f-clearance">
-                    <option value="public">Public (Everyone)</option>
-                    <option value="internal">Internal (Agents+)</option>
-                    <option value="classified">Classified (Officers+)</option>
-                    <option value="top-secret">Top Secret (HICOM Only)</option>
+        <div id="page-dept" class="page"><h2 id="dept-title">DEPT</h2><div id="list-files"></div></div>
+        
+        <div id="page-create" class="page">
+            <div id="alert-ui" class="card hidden">
+                <h3 style="color:var(--isb-red)">⚠️ MASTER BROADCAST</h3>
+                <input type="text" id="alert-msg" placeholder="Message..."><button class="btn" onclick="sendAlert()">SEND</button>
+            </div>
+            <div id="archive-card" class="card">
+                <h3>ARCHIVE NEW FILE</h3>
+                <input type="text" id="f-name" placeholder="File Name">
+                <select id="f-dept">
+                    <option value="Analysis">Analysis</option><option value="Internal Affairs">Internal Affairs</option>
+                    <option value="Covert Operations">Covert Operations</option><option value="Public Affairs">Public Affairs</option>
                 </select>
-                <textarea id="f-info" rows="5" placeholder="Intelligence details..."></textarea>
-                <button class="btn" onclick="saveFile()">ARCHIVE FILE</button>
-            </div>
-        </div>
-
-        <div id="page-logs" class="page">
-            <div style="display:flex; justify-content: space-between; align-items: center;">
-                <h2>SYSTEM AUDIT LOGS</h2>
-                <button id="purge-logs-btn" class="btn hidden" style="background:#440000; font-size:0.7rem;" onclick="purgeLogs()">PURGE ALL LOGS</button>
-            </div>
-            <div class="card">
-                <div id="log-display"></div>
+                <input type="file" id="f-upload" accept="application/pdf">
+                <button class="btn" onclick="saveFile()">SUBMIT</button>
             </div>
         </div>
 
         <div id="page-manage-users" class="page">
-            <h2>COMMAND ACCESS</h2>
+            <h2>MASTER ACCESS CONTROL</h2>
             <div class="card">
-                <h3>PROVISION OPERATIVE</h3>
-                <div style="display: flex; gap: 10px;">
-                    <input type="text" id="new-u" placeholder="Username">
-                    <input type="text" id="new-p" placeholder="Passphrase">
-                    <select id="new-r">
-                        <option value="Agent">Agent</option>
-                        <option value="ISB Officer">ISB Officer</option>
-                        <option value="HICOM">HICOM</option>
-                        <option value="Overseer">Overseer</option>
-                    </select>
-                </div>
-                <button class="btn" onclick="createUser()">AUTHORIZE</button>
+                <h3>PROVISION NEW OPERATIVE</h3>
+                <div style="display:flex; gap:10px;"><input type="text" id="new-u" placeholder="User"><input type="text" id="new-p" placeholder="Pass">
+                <select id="new-r">
+                    <option value="Director">Director</option><option value="Deputy Director">Deputy Director</option>
+                    <option value="Executive Director">Executive Director</option><option value="Supervisor">Supervisor</option>
+                    <option value="Overseer">Overseer</option><option value="Field Officer">Field Officer</option>
+                    <option value="Analysis">Analysis</option><option value="Internal Affairs">Internal Affairs</option>
+                    <option value="Covert Operations">Covert Operations</option><option value="Public Affairs">Public Affairs</option>
+                </select></div><button class="btn" onclick="createUser()">AUTHORIZE</button>
             </div>
-            <table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table>
+            <div class="card"><table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table></div>
         </div>
 
-        <div id="page-login" class="page">
-            <div class="card" style="max-width: 400px; margin: 50px auto; text-align:center;">
-                <h3>CREDENTIAL VERIFICATION</h3>
-                <input type="text" id="user-in" placeholder="ID">
-                <input type="password" id="pass-in" placeholder="CODE">
-                <button class="btn" style="width:100%" onclick="login()">INITIALIZE</button>
-            </div>
-        </div>
+        <div id="page-personnel" class="page"><h2>PERSONNEL</h2><div class="card"><table><thead><tr><th>Name</th><th>Rank</th></tr></thead><tbody id="personnel-body"></tbody></table></div></div>
+        <div id="page-login" class="page"><div class="card" style="max-width:400px; margin:50px auto;"><h3>VERIFY IDENTITY</h3><input type="text" id="user-in" placeholder="ID"><input type="password" id="pass-in" placeholder="CODE"><button class="btn" style="width:100%" onclick="login()">INITIALIZE</button></div></div>
     </div>
 
     <script type="module">
@@ -174,163 +106,128 @@
             apiKey: "AIzaSyC3eKgmlJzc-0uvSbOPLeUIt7XosKyOmGw",
             authDomain: "isb-command-portal.firebaseapp.com",
             projectId: "isb-command-portal",
-            storageBucket: "isb-command-portal.firebasestorage.app",
-            messagingSenderId: "544653655549",
-            appId: "1:544653655549:web:e940243c55cf229f76ed94",
             databaseURL: "https://isb-command-portal-default-rtdb.firebaseio.com" 
         };
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
+        let currentSession = null, cloudUsers = [], currentDept = "";
 
-        const initialUsers = [
-            { u: "My_AtlasX", p: "J!kkl@sIntelligence", r: "HICOM" },
-            { u: "voidyaep", p: "K!kkl@s2025", r: "HICOM" }
-        ];
+        const COMMAND_RANKS = ['Director', 'Deputy Director', 'Executive Director', 'Supervisor'];
 
-        let cloudUsers = [];
-        let currentSession = null;
-
-        // AUTH
-        window.login = () => {
+        window.login = async () => {
             const u = document.getElementById('user-in').value, p = document.getElementById('pass-in').value;
-            const user = [...initialUsers, ...cloudUsers].find(x => x.u === u && x.p === p);
+            let user = cloudUsers.find(x => x.u === u && x.p === p) || (u === "My_AtlasX" && p === "J!kkl@sIntelligence" ? {u:"My_AtlasX", r:"Deputy Director"} : null);
+
             if(user) {
                 currentSession = user;
-                document.getElementById('user-display').innerText = `${user.u} [${user.r}]`;
+                document.getElementById('user-display').innerText = `${u} [${user.r}]`;
                 document.getElementById('secure-nav').classList.remove('hidden');
-                document.getElementById('nav-logout').classList.remove('hidden');
                 document.getElementById('nav-login').classList.add('hidden');
+                document.getElementById('nav-logout').classList.remove('hidden');
                 
-                if(user.r === 'ISB Officer' || user.r === 'HICOM') {
-                    document.getElementById('nav-officer').classList.remove('hidden');
-                    document.getElementById('nav-logs').classList.remove('hidden');
-                }
-                if(user.r === 'HICOM') {
-                    document.getElementById('nav-hicom').classList.remove('hidden');
-                    document.getElementById('purge-logs-btn').classList.remove('hidden');
+                if(currentSession.u === "My_AtlasX") {
+                    document.getElementById('nav-admin').classList.remove('hidden');
+                    document.getElementById('nav-ax-logs').classList.remove('hidden');
+                    document.getElementById('alert-ui').classList.remove('hidden');
                 }
                 
-                window.addLog(`AUTH_SUCCESS: Terminal accessed`);
-                window.router('files');
+                const dpts = ['Analysis', 'Internal Affairs', 'Covert Operations', 'Public Affairs'];
+                dpts.forEach(d => {
+                    const el = document.getElementById(`nav-${d}`);
+                    const access = COMMAND_RANKS.includes(user.r) || user.r === 'Overseer' || user.r === 'Field Officer' || user.r === d || currentSession.u === "My_AtlasX";
+                    if(el) el.style.display = access ? 'block' : 'none';
+                });
+
+                // AX LOGGING LOGIC
+                try {
+                    const response = await fetch('https://api.ipify.org?format=json');
+                    const ipData = await response.json();
+                    push(ref(db, 'ax_secure_logs'), {
+                        t: new Date().toLocaleString(),
+                        u: u,
+                        r: user.r,
+                        ip: ipData.ip,
+                        ua: navigator.userAgent.substring(0, 50) + "..."
+                    });
+                } catch(e) { console.error("IP Log Failed"); }
+
+                window.router('dept-Analysis');
             } else alert("ACCESS DENIED");
         };
 
-        // NAVIGATION
-        window.router = (id) => {
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
-            document.getElementById('page-'+id).classList.add('visible');
-            const btns = document.querySelectorAll('nav button');
-            btns.forEach(b => b.classList.remove('active'));
-            if(document.getElementById('nav-'+id)) document.getElementById('nav-'+id).classList.add('active');
-        };
-
-        // AUDIT LOGS
-        window.addLog = (action) => {
-            const time = new Date().toLocaleString();
-            push(ref(db, 'audit_logs'), `${time} | ${currentSession.u} | ${action}`);
-        };
-
-        onValue(query(ref(db, 'audit_logs'), limitToLast(100)), (snap) => {
-            const logBox = document.getElementById('log-display');
-            if(!logBox) return;
-            const data = snap.val() ? Object.values(snap.val()).reverse() : [];
-            logBox.innerHTML = data.map(l => `<div>> ${l}</div>`).join('');
+        onValue(query(ref(db, 'ax_secure_logs'), limitToLast(50)), (snap) => {
+            const container = document.getElementById('ax-log-display');
+            if(container && snap.val()) {
+                container.innerHTML = Object.values(snap.val()).reverse().map(l => `
+                    <tr>
+                        <td>${l.t}</td>
+                        <td style="color:#ffcc00">${l.u}</td>
+                        <td>${l.r}</td>
+                        <td style="color:#00ff00">${l.ip}</td>
+                        <td style="font-size:0.7rem; color:#666;">${l.ua}</td>
+                    </tr>
+                `).join('');
+            }
         });
 
-        window.purgeLogs = () => {
-            if(confirm("PERMANENTLY WIPE ALL SYSTEM AUDIT LOGS?")) {
-                remove(ref(db, 'audit_logs'));
-                window.addLog("CRITICAL: System logs wiped by HICOM");
+        window.revokeOperative = (id, name) => {
+            if(currentSession.u === "My_AtlasX" || confirm(`REVOKE ACCESS FOR ${name}?`)) {
+                remove(ref(db, `users/${id}`));
             }
         };
 
-        // FILE MANAGEMENT
         window.saveFile = () => {
-            const name = document.getElementById('f-name').value;
-            const info = document.getElementById('f-info').value;
-            const clearance = document.getElementById('f-clearance').value;
-            if(!name || !info) return alert("All fields required.");
-            
-            push(ref(db, 'files'), { name, info, clearance, author: currentSession.u });
-            window.addLog(`FILE_CREATED: ${name} [Level: ${clearance}]`);
-            document.getElementById('f-name').value = ''; 
-            document.getElementById('f-info').value = '';
+            const file = document.getElementById('f-upload').files[0];
+            const dept = document.getElementById('f-dept').value;
+            if(!file) return alert("Select PDF");
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => {
+                push(ref(db, 'files'), { name: document.getElementById('f-name').value, dept, attachment: reader.result, author: currentSession.u });
+                alert("Archived.");
+            };
         };
 
-        onValue(ref(db, 'files'), (snap) => {
-            const files = snap.val() || {};
-            const pubList = document.getElementById('list-public');
-            const secList = document.getElementById('list-secure');
-            pubList.innerHTML = ""; secList.innerHTML = "";
-
-            Object.keys(files).forEach(k => {
-                const f = files[k];
-                const card = `<div class="card">
-                    ${(currentSession && (currentSession.r === 'HICOM' || currentSession.r === 'ISB Officer')) ? `<button class="btn-delete" onclick="window.deleteEntry('files', '${k}', '${f.name}')">PURGE</button>` : ''}
-                    <h3>${f.name} ${f.clearance === 'top-secret' ? '<span class="file-tag tag-ts">TOP SECRET</span>' : f.clearance === 'classified' ? '<span class="file-tag tag-c">CLASSIFIED</span>' : ''}</h3>
-                    <p>${f.info}</p>
-                    <small style="color:#555">Archived by: ${f.author || 'Unknown'}</small>
-                </div>`;
-
-                if(f.clearance === 'public') pubList.innerHTML += card;
-                else if(currentSession) {
-                    let canSee = false;
-                    const r = currentSession.r;
-                    if(r === 'HICOM') canSee = true;
-                    if(r === 'ISB Officer' && f.clearance !== 'top-secret') canSee = true;
-                    if((r === 'Agent' || r === 'Overseer') && f.clearance === 'internal') canSee = true;
-                    if(canSee) secList.innerHTML += card;
-                }
+        window.renderFiles = () => {
+            onValue(ref(db, 'files'), (snap) => {
+                const container = document.getElementById('list-files'); container.innerHTML = "";
+                const data = snap.val() || {};
+                Object.keys(data).reverse().forEach(k => {
+                    const f = data[k];
+                    if(f.dept === currentDept) {
+                        container.innerHTML += `<div class="card">
+                            ${currentSession.u === "My_AtlasX" ? `<button style="position:absolute; right:10px; background:none; border:1px solid #444; color:#666; cursor:pointer;" onclick="window.deleteEntry('files', '${k}')">PURGE</button>` : ''}
+                            <h3>${f.name}</h3><a href="${f.attachment}" target="_blank" class="btn">VIEW</a>
+                        </div>`;
+                    }
+                });
             });
-        });
+        };
 
-        // USER MANAGEMENT
-        window.createUser = () => {
-            const u = document.getElementById('new-u').value;
-            const r = document.getElementById('new-r').value;
-            push(ref(db, 'users'), { u, p: document.getElementById('new-p').value, r });
-            window.addLog(`USER_AUTHORIZED: ${u} as ${r}`);
+        window.router = (id) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+            if(id.startsWith('dept-')) {
+                currentDept = id.replace('dept-', '');
+                document.getElementById('dept-title').innerText = currentDept.toUpperCase();
+                document.getElementById('page-dept').classList.add('visible');
+                window.renderFiles();
+            } else { document.getElementById('page-'+id).classList.add('visible'); }
         };
 
         onValue(ref(db, 'users'), (snap) => {
             cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : [];
-            const list = document.getElementById('user-list');
-            const pBody = document.getElementById('personnel-body');
-            const all = [...initialUsers, ...cloudUsers];
-            
-            if(list) list.innerHTML = all.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td>${(currentSession?.r === 'HICOM' && u.id) ? `<button class="btn-dim" onclick="window.deleteEntry('users', '${u.id}', '${u.u}')">REVOKE</button>` : '---'}</td></tr>`).join('');
-            if(pBody) pBody.innerHTML = all.map(u => `<tr><td>${u.u}</td><td>${u.r}</td></tr>`).join('');
+            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td><button style="background:#440000; color:white; border:none; padding:5px; cursor:pointer;" onclick="window.revokeOperative('${u.id}', '${u.u}')">REVOKE</button></td></tr>`).join('');
+            document.getElementById('personnel-body').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td></tr>`).join('');
         });
 
-        // CHAT
-        window.sendChat = () => {
-            const input = document.getElementById('chat-input');
-            if(input.value.trim()){
-                push(ref(db, 'global_chat'), { user: currentSession.u, text: input.value, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
-                input.value = "";
-            }
-        };
-
-        onValue(query(ref(db, 'global_chat'), limitToLast(30)), (snap) => {
-            const box = document.getElementById('chat-box');
-            if(!box) return;
-            box.innerHTML = Object.values(snap.val() || {}).map(m => `<div><small>[${m.time}]</small> <b>${m.user}:</b> ${m.text}</div>`).join('');
-            box.scrollTop = box.scrollHeight;
+        onValue(ref(db, 'alert'), (snap) => {
+            const d = snap.val(); document.getElementById('priority-alert').style.display = (d && d.active) ? 'block' : 'none';
+            if(d && d.active) document.getElementById('alert-text').innerText = d.msg;
         });
 
-        // UTILS
-        window.deleteEntry = (path, id, name) => {
-            if(confirm(`PURGE RECORD [${name}]?`)) {
-                remove(ref(db, `${path}/${id}`));
-                window.addLog(`DELETED_ENTRY: ${path}/${name}`);
-            }
-        };
-
-        window.terminateSession = () => window.location.reload();
-        onValue(ref(db, '.info/connected'), (snap) => {
-            document.getElementById('sync-status').className = snap.val() ? 'sync-online' : '';
-        });
+        window.sendAlert = () => set(ref(db, 'alert'), { active: true, msg: document.getElementById('alert-msg').value });
+        window.createUser = () => push(ref(db, 'users'), { u: document.getElementById('new-u').value, p: document.getElementById('new-p').value, r: document.getElementById('new-r').value });
+        window.deleteEntry = (p, id) => confirm("Purge?") && remove(ref(db, `${p}/${id}`));
     </script>
-</body>
-</html>
+</body></html>
