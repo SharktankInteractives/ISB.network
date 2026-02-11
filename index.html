@@ -1,4 +1,6 @@
-<!DOCTYPE html><html lang="en"><head>
+<!DOCTYPE html>
+<html lang="en">
+<head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ISB CENTRAL COMMAND</title>
@@ -15,17 +17,8 @@
         body { background: var(--isb-bg); color: var(--text); font-family: 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; overflow: hidden; }
 
         /* STATUS INDICATORS */
-        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; margin-right: 8px; }
-        .online { background-color: #00ff00; box-shadow: 0 0 8px #00ff00; }
-        .offline { background-color: #444; }
-
         #sync-status { position: fixed; bottom: 20px; right: 20px; width: 14px; height: 14px; border-radius: 50%; background: #440000; border: 2px solid rgba(255,255,255,0.3); transition: 0.5s; z-index: 9999; }
-        .sync-online { background: #00ff00 !important; box-shadow: 0 0 15px #00ff00, 0 0 5px #fff; }
-
-        /* ALERT BANNER */
-        #global-alert-banner { position: fixed; top: 0; left: 300px; right: 0; padding: 12px; text-align: center; font-weight: bold; z-index: 2000; letter-spacing: 2px; text-transform: uppercase; display: none; border-bottom: 2px solid rgba(255,255,255,0.2); }
-        .alert-critical { background: var(--isb-red); color: white; animation: pulse 1s infinite; }
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .sync-online { background: #00ff00 !important; box-shadow: 0 0 15px #00ff00; }
 
         /* SIDEBAR */
         #sidebar { width: 300px; background: var(--isb-panel); border-right: 1px solid var(--isb-border); display: flex; flex-direction: column; flex-shrink: 0; }
@@ -42,42 +35,43 @@
 
         /* CHAT SYSTEM */
         #chat-box { height: 400px; overflow-y: auto; background: #000; border: 1px solid var(--isb-border); padding: 15px; margin-bottom: 10px; font-family: monospace; }
-        .chat-entry { margin-bottom: 8px; border-bottom: 1px solid #111; padding-bottom: 4px; }
-        .chat-entry b { color: var(--isb-red); }
+        
+        /* LOGS */
+        #log-display { height: 500px; overflow-y: auto; font-family: monospace; color: #00ff00; font-size: 0.85rem; line-height: 1.4; background: #000; padding: 10px; }
 
         input, select, textarea { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; box-sizing: border-box; }
         .btn { background: var(--isb-red); color: white; border: none; padding: 12px 25px; cursor: pointer; font-weight: bold; }
-        .btn-dim { background: #222; color: #aaa; border: 1px solid #333; padding: 8px 12px; cursor: pointer; font-size: 0.75rem; }
-        .btn-delete { background: #440000; color: #ff8888; border: 1px solid #660000; padding: 5px 10px; cursor: pointer; font-size: 0.7rem; position: absolute; top: 15px; right: 15px; }
+        .btn-delete { background: #440000; color: #ff8888; border: none; padding: 5px 10px; cursor: pointer; position: absolute; top: 15px; right: 15px; font-size: 0.7rem; }
 
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
         th, td { border: 1px solid var(--isb-border); padding: 12px; text-align: left; }
         th { color: var(--isb-red); font-size: 0.75rem; text-transform: uppercase; background: #161616; }
 
         .hidden { display: none !important; }
-    </style></head><body>
+        .file-tag { font-size: 0.7rem; padding: 2px 6px; border-radius: 3px; margin-left: 10px; vertical-align: middle; font-weight: bold; }
+        .tag-ts { background: var(--isb-red); color: white; }
+        .tag-c { background: var(--isb-warn); color: black; }
+    </style>
+</head>
+<body>
 
     <div id="sync-status"></div>
-    <div id="global-alert-banner"></div>
 
     <div id="sidebar">
         <div class="header">
             <h1 style="margin:0; letter-spacing:3px; font-size:1.2rem;">ISB COMMAND</h1>
-            <small style="color:var(--isb-red)">CORE DATA RESTORED</small>
+            <small id="user-display" style="color:var(--isb-red)">SECURE TERMINAL</small>
         </div>
         <nav id="nav-links">
             <button onclick="router('public')" id="nav-public" class="active">Public Archives</button>
-            <button onclick="router('onsight')" id="nav-onsight">Onsight List</button>
-            <button onclick="router('blacklist')" id="nav-blacklist">Blacklist Tracker</button>
             
             <div id="secure-nav" class="hidden">
-                <button onclick="router('chat')" style="color:var(--isb-warn)">💬 GLOBAL CHAT</button>
-                <button onclick="router('classified')">Classified Files</button>
-                <button onclick="router('ongoing')">Ongoing Cases</button>
+                <button onclick="router('files')">Intelligence Files</button>
                 <button onclick="router('personnel')">Personnel Directory</button>
-                <button onclick="router('create')">Manage Files</button>
-                <button onclick="router('manage-users')" id="nav-super" class="hidden" style="color: var(--isb-warn);">Access Management</button>
-                <button onclick="router('logs')">System Logs</button>
+                <button onclick="router('chat')" style="color:var(--isb-warn)">💬 SECURE CHAT</button>
+                <button onclick="router('manage-files')" id="nav-officer" class="hidden">File Management</button>
+                <button onclick="router('logs')" id="nav-logs" class="hidden">System Logs</button>
+                <button onclick="router('manage-users')" id="nav-hicom" class="hidden" style="color: var(--isb-warn);">Access Management</button>
             </div>
 
             <button onclick="router('login')" id="nav-login" style="margin-top:20px; color:var(--isb-red);">[ ACCESS TERMINAL ]</button>
@@ -86,43 +80,76 @@
     </div>
 
     <div id="main">
+        <div id="page-public" class="page visible">
+            <h2>PUBLIC RECORDS</h2>
+            <div id="list-public"></div>
+        </div>
+
+        <div id="page-files" class="page">
+            <h2>INTELLIGENCE DATABASE</h2>
+            <div id="list-secure"></div>
+        </div>
+
         <div id="page-chat" class="page">
-            <h2>GLOBAL CHAT</h2>
+            <h2>SECURE TRANSMISSIONS</h2>
             <div class="card">
                 <div id="chat-box"></div>
                 <div style="display:flex; gap:10px;">
-                    <input type="text" id="chat-input" placeholder="Secure transmission..." onkeydown="if(event.key==='Enter') sendChat()">
+                    <input type="text" id="chat-input" placeholder="Secure message..." onkeydown="if(event.key==='Enter') sendChat()">
                     <button class="btn" onclick="sendChat()">SEND</button>
                 </div>
             </div>
-        </div>
-
-        <div id="page-logs" class="page">
-            <h2>SYSTEM AUDIT LOGS</h2>
-            <div id="list-logs" class="card" style="font-family: monospace; max-height: 600px; overflow-y: auto; color: #00ff00; background: #000;"></div>
         </div>
 
         <div id="page-personnel" class="page">
             <h2>PERSONNEL DIRECTORY</h2>
             <div class="card">
                 <table>
-                    <thead><tr><th>Status</th><th>Operative</th><th>Rank</th></tr></thead>
+                    <thead><tr><th>Operative</th><th>Rank</th></tr></thead>
                     <tbody id="personnel-body"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <div id="page-manage-files" class="page">
+            <h2>FILE ARCHIVE SYSTEM</h2>
+            <div class="card">
+                <h3>CREATE NEW ENTRY</h3>
+                <input type="text" id="f-name" placeholder="File Subject">
+                <select id="f-clearance">
+                    <option value="public">Public (Everyone)</option>
+                    <option value="internal">Internal (Agents+)</option>
+                    <option value="classified">Classified (Officers+)</option>
+                    <option value="top-secret">Top Secret (HICOM Only)</option>
+                </select>
+                <textarea id="f-info" rows="5" placeholder="Intelligence details..."></textarea>
+                <button class="btn" onclick="saveFile()">ARCHIVE FILE</button>
+            </div>
+        </div>
+
+        <div id="page-logs" class="page">
+            <div style="display:flex; justify-content: space-between; align-items: center;">
+                <h2>SYSTEM AUDIT LOGS</h2>
+                <button id="purge-logs-btn" class="btn hidden" style="background:#440000; font-size:0.7rem;" onclick="purgeLogs()">PURGE ALL LOGS</button>
+            </div>
+            <div class="card">
+                <div id="log-display"></div>
             </div>
         </div>
 
         <div id="page-manage-users" class="page">
             <h2>COMMAND ACCESS</h2>
             <div class="card">
-                <h4>ISSUE ALERT BROADCAST</h4>
-                <input type="text" id="alert-msg" placeholder="Broadcast message..."><button class="btn" onclick="postAlert()">BROADCAST</button>
-            </div>
-            <div class="card">
-                <h4>PROVISION NEW OPERATIVE</h4>
+                <h3>PROVISION OPERATIVE</h3>
                 <div style="display: flex; gap: 10px;">
-                    <input type="text" id="new-u" placeholder="Username"><input type="text" id="new-p" placeholder="Passphrase">
-                    <select id="new-r"><option value="Admin">Admin</option><option value="Overseer">Overseer</option><option value="Super Admin">Super Admin</option></select>
+                    <input type="text" id="new-u" placeholder="Username">
+                    <input type="text" id="new-p" placeholder="Passphrase">
+                    <select id="new-r">
+                        <option value="Agent">Agent</option>
+                        <option value="ISB Officer">ISB Officer</option>
+                        <option value="HICOM">HICOM</option>
+                        <option value="Overseer">Overseer</option>
+                    </select>
                 </div>
                 <button class="btn" onclick="createUser()">AUTHORIZE</button>
             </div>
@@ -130,23 +157,18 @@
         </div>
 
         <div id="page-login" class="page">
-            <div class="card" style="max-width: 400px; margin: 50px auto;">
-                <h3 style="text-align:center;">CREDENTIAL VERIFICATION</h3>
-                <input type="text" id="user-in" placeholder="ID"><input type="password" id="pass-in" placeholder="CODE">
+            <div class="card" style="max-width: 400px; margin: 50px auto; text-align:center;">
+                <h3>CREDENTIAL VERIFICATION</h3>
+                <input type="text" id="user-in" placeholder="ID">
+                <input type="password" id="pass-in" placeholder="CODE">
                 <button class="btn" style="width:100%" onclick="login()">INITIALIZE</button>
             </div>
         </div>
-        <div id="page-public" class="page visible"><h2>PUBLIC RECORDS</h2><div id="list-public"></div></div>
-        <div id="page-classified" class="page"><h2>CLASSIFIED</h2><div id="list-classified"></div></div>
-        <div id="page-ongoing" class="page"><h2>ONGOING CASES</h2><div id="list-ongoing"></div></div>
-        <div id="page-onsight" class="page"><h2>ONSIGHT LIST</h2><div id="os-admin" class="card hidden"><input type="text" id="os-user" placeholder="Target"><select id="os-status"><option value="KOS">KOS</option><option value="AOS">AOS</option></select><input type="text" id="os-reason" placeholder="Reason"><input type="date" id="os-expiry"><button class="btn" onclick="addOnsight()">AUTHORIZE</button></div><table><thead><tr><th>Subject</th><th>Status</th><th>Reason</th><th>Expires</th><th>Action</th></tr></thead><tbody id="onsight-body"></tbody></table></div>
-        <div id="page-blacklist" class="page"><h2>BLACKLIST TRACKER</h2><div id="bl-admin" class="card hidden"><input type="text" id="bl-name" placeholder="User"><input type="date" id="bl-expiry"><input type="text" id="bl-type" placeholder="Violation"><textarea id="bl-reason"></textarea><button class="btn" onclick="addBlacklist()">ENFORCE</button></div><table><thead><tr><th>Subject</th><th>Violation</th><th>Reason</th><th>Expires</th><th>Action</th></tr></thead><tbody id="bl-table"></tbody></table></div>
-        <div id="page-create" class="page"><h2>FILE MANAGEMENT</h2><div class="card"><input type="text" id="f-name" placeholder="File Name"><select id="f-cat"><option value="File">General</option><option value="Personnel">Personnel</option></select><input type="text" id="f-sec" placeholder="Y/N/O"><textarea id="f-info"></textarea><button class="btn" onclick="saveFile()">ARCHIVE</button></div></div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, query, limitToLast, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, query, limitToLast } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyC3eKgmlJzc-0uvSbOPLeUIt7XosKyOmGw",
@@ -161,117 +183,154 @@
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
 
-        // INITIAL OPERATIVES (Hardcoded Persistence)
         const initialUsers = [
-            { u: "My_AtlasX", p: "J!kkl@sIntelligence", r: "Super Admin" },
-            { u: "voidyaep", p: "K!kkl@s2025", r: "Super Admin" },
-            { u: "PalpatineIsCool123", p: "AC^MZ*u]+?uNnoA%~6Y~", r: "Overseer" },
-            { u: "Phendriieson", p: "ISB509126", r: "Admin" },
-            { u: "Minister_Ducky", p: "ZAQ!2wsx", r: "Admin" },
-            { u: "TheLimit", p: "NabooIsTheCoolestPlanet", r: "Admin" },
-            { u: "Moon", p: "Starfish55@", r: "Admin" }
-            
+            { u: "My_AtlasX", p: "J!kkl@sIntelligence", r: "HICOM" },
+            { u: "voidyaep", p: "K!kkl@s2025", r: "HICOM" }
         ];
 
         let cloudUsers = [];
         let currentSession = null;
-        let onlineStatus = {};
 
-        // SYNC STATUS
-        onValue(ref(db, '.info/connected'), (snap) => {
-            document.getElementById('sync-status').className = snap.val() ? 'sync-online' : '';
-        });
-
-        // HEARTBEAT FOR PERSONNEL DIRECTORY
-        setInterval(() => {
-            if(currentSession) set(ref(db, 'status/' + currentSession.u), serverTimestamp());
-        }, 15000);
-
-        // REAL-TIME LISTENERS
-        onValue(ref(db, 'status'), (snap) => { onlineStatus = snap.val() || {}; window.renderPersonnel(); });
-        
-        onValue(query(ref(db, 'global_chat'), limitToLast(40)), (snap) => {
-            const box = document.getElementById('chat-box'); if(!box) return;
-            box.innerHTML = Object.values(snap.val() || {}).map(m => `<div class="chat-entry"><small>[${m.time}]</small> <b>${m.user}:</b> ${m.text}</div>`).join('');
-            box.scrollTop = box.scrollHeight;
-        });
-
-        onValue(query(ref(db, 'logs'), limitToLast(60)), (snap) => {
-            document.getElementById('list-logs').innerHTML = Object.values(snap.val() || {}).reverse().map(l => `<div>> ${l}</div>`).join('');
-        });
-
-        onValue(ref(db, 'global_alert'), (snap) => {
-            const banner = document.getElementById('global-alert-banner');
-            if (snap.val()) { banner.className = 'alert-critical'; banner.innerText = snap.val().msg; banner.style.display = 'block'; }
-            else banner.style.display = 'none';
-        });
-
-        onValue(ref(db, 'users'), (snap) => { cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : []; window.renderUserTable(); window.renderPersonnel(); });
-        onValue(ref(db, 'files'), (snap) => { window.renderFilesAll(snap.val() || {}); });
-        onValue(ref(db, 'blacklist'), (snap) => { 
-            const d = snap.val() || {};
-            document.getElementById('bl-table').innerHTML = Object.keys(d).map(k => `<tr><td>${d[k].name}</td><td>${d[k].type}</td><td>${d[k].reason}</td><td>${d[k].expiry}</td><td>${currentSession && currentSession.r !== 'Overseer' ? `<button class="btn-dim" style="color:red" onclick="window.deleteEntry('blacklist', '${k}', '${d[k].name}')">PURGE</button>` : '---'}</td></tr>`).join('');
-        });
-        onValue(ref(db, 'onsight'), (snap) => {
-            const d = snap.val() || {};
-            document.getElementById('onsight-body').innerHTML = Object.keys(d).map(k => `<tr><td>${d[k].user}</td><td>${d[k].status}</td><td>${d[k].reason}</td><td>${d[k].expiry}</td><td>${currentSession && currentSession.r !== 'Overseer' ? `<button class="btn-dim" style="color:red" onclick="window.deleteEntry('onsight', '${k}', '${d[k].user}')">PURGE</button>` : '---'}</td></tr>`).join('');
-        });
-
-        // GLOBAL ACTION BINDINGS
+        // AUTH
         window.login = () => {
             const u = document.getElementById('user-in').value, p = document.getElementById('pass-in').value;
             const user = [...initialUsers, ...cloudUsers].find(x => x.u === u && x.p === p);
             if(user) {
                 currentSession = user;
-                set(ref(db, 'status/' + user.u), serverTimestamp());
-                window.addLog(`AUTH_SUCCESS: ${user.u} [Clearance: ${user.r}]`);
+                document.getElementById('user-display').innerText = `${user.u} [${user.r}]`;
                 document.getElementById('secure-nav').classList.remove('hidden');
                 document.getElementById('nav-logout').classList.remove('hidden');
                 document.getElementById('nav-login').classList.add('hidden');
-                if(user.r !== 'Overseer') { document.getElementById('bl-admin').classList.remove('hidden'); document.getElementById('os-admin').classList.remove('hidden'); }
-                if(user.r === 'Super Admin') document.getElementById('nav-super').classList.remove('hidden');
-                window.router('chat');
-            } else alert("TERMINAL ACCESS DENIED");
+                
+                if(user.r === 'ISB Officer' || user.r === 'HICOM') {
+                    document.getElementById('nav-officer').classList.remove('hidden');
+                    document.getElementById('nav-logs').classList.remove('hidden');
+                }
+                if(user.r === 'HICOM') {
+                    document.getElementById('nav-hicom').classList.remove('hidden');
+                    document.getElementById('purge-logs-btn').classList.remove('hidden');
+                }
+                
+                window.addLog(`AUTH_SUCCESS: Terminal accessed`);
+                window.router('files');
+            } else alert("ACCESS DENIED");
         };
 
+        // NAVIGATION
+        window.router = (id) => {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+            document.getElementById('page-'+id).classList.add('visible');
+            const btns = document.querySelectorAll('nav button');
+            btns.forEach(b => b.classList.remove('active'));
+            if(document.getElementById('nav-'+id)) document.getElementById('nav-'+id).classList.add('active');
+        };
+
+        // AUDIT LOGS
+        window.addLog = (action) => {
+            const time = new Date().toLocaleString();
+            push(ref(db, 'audit_logs'), `${time} | ${currentSession.u} | ${action}`);
+        };
+
+        onValue(query(ref(db, 'audit_logs'), limitToLast(100)), (snap) => {
+            const logBox = document.getElementById('log-display');
+            if(!logBox) return;
+            const data = snap.val() ? Object.values(snap.val()).reverse() : [];
+            logBox.innerHTML = data.map(l => `<div>> ${l}</div>`).join('');
+        });
+
+        window.purgeLogs = () => {
+            if(confirm("PERMANENTLY WIPE ALL SYSTEM AUDIT LOGS?")) {
+                remove(ref(db, 'audit_logs'));
+                window.addLog("CRITICAL: System logs wiped by HICOM");
+            }
+        };
+
+        // FILE MANAGEMENT
+        window.saveFile = () => {
+            const name = document.getElementById('f-name').value;
+            const info = document.getElementById('f-info').value;
+            const clearance = document.getElementById('f-clearance').value;
+            if(!name || !info) return alert("All fields required.");
+            
+            push(ref(db, 'files'), { name, info, clearance, author: currentSession.u });
+            window.addLog(`FILE_CREATED: ${name} [Level: ${clearance}]`);
+            document.getElementById('f-name').value = ''; 
+            document.getElementById('f-info').value = '';
+        };
+
+        onValue(ref(db, 'files'), (snap) => {
+            const files = snap.val() || {};
+            const pubList = document.getElementById('list-public');
+            const secList = document.getElementById('list-secure');
+            pubList.innerHTML = ""; secList.innerHTML = "";
+
+            Object.keys(files).forEach(k => {
+                const f = files[k];
+                const card = `<div class="card">
+                    ${(currentSession && (currentSession.r === 'HICOM' || currentSession.r === 'ISB Officer')) ? `<button class="btn-delete" onclick="window.deleteEntry('files', '${k}', '${f.name}')">PURGE</button>` : ''}
+                    <h3>${f.name} ${f.clearance === 'top-secret' ? '<span class="file-tag tag-ts">TOP SECRET</span>' : f.clearance === 'classified' ? '<span class="file-tag tag-c">CLASSIFIED</span>' : ''}</h3>
+                    <p>${f.info}</p>
+                    <small style="color:#555">Archived by: ${f.author || 'Unknown'}</small>
+                </div>`;
+
+                if(f.clearance === 'public') pubList.innerHTML += card;
+                else if(currentSession) {
+                    let canSee = false;
+                    const r = currentSession.r;
+                    if(r === 'HICOM') canSee = true;
+                    if(r === 'ISB Officer' && f.clearance !== 'top-secret') canSee = true;
+                    if((r === 'Agent' || r === 'Overseer') && f.clearance === 'internal') canSee = true;
+                    if(canSee) secList.innerHTML += card;
+                }
+            });
+        });
+
+        // USER MANAGEMENT
+        window.createUser = () => {
+            const u = document.getElementById('new-u').value;
+            const r = document.getElementById('new-r').value;
+            push(ref(db, 'users'), { u, p: document.getElementById('new-p').value, r });
+            window.addLog(`USER_AUTHORIZED: ${u} as ${r}`);
+        };
+
+        onValue(ref(db, 'users'), (snap) => {
+            cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : [];
+            const list = document.getElementById('user-list');
+            const pBody = document.getElementById('personnel-body');
+            const all = [...initialUsers, ...cloudUsers];
+            
+            if(list) list.innerHTML = all.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td>${(currentSession?.r === 'HICOM' && u.id) ? `<button class="btn-dim" onclick="window.deleteEntry('users', '${u.id}', '${u.u}')">REVOKE</button>` : '---'}</td></tr>`).join('');
+            if(pBody) pBody.innerHTML = all.map(u => `<tr><td>${u.u}</td><td>${u.r}</td></tr>`).join('');
+        });
+
+        // CHAT
         window.sendChat = () => {
             const input = document.getElementById('chat-input');
             if(input.value.trim()){
-                push(ref(db, 'global_chat'), { user: currentSession.u, text: input.value, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit', second:'2-digit'}) });
+                push(ref(db, 'global_chat'), { user: currentSession.u, text: input.value, time: new Date().toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) });
                 input.value = "";
             }
         };
 
-        window.renderPersonnel = () => {
-            const body = document.getElementById('personnel-body'); if(!body) return;
-            const now = Date.now();
-            body.innerHTML = [...initialUsers, ...cloudUsers].map(u => {
-                const isActive = (now - (onlineStatus[u.u] || 0)) < 45000;
-                return `<tr><td><span class="status-dot ${isActive ? 'online' : 'offline'}"></span>${isActive ? 'ACTIVE' : 'OFFLINE'}</td><td>${u.u}</td><td>${u.r}</td></tr>`;
-            }).join('');
+        onValue(query(ref(db, 'global_chat'), limitToLast(30)), (snap) => {
+            const box = document.getElementById('chat-box');
+            if(!box) return;
+            box.innerHTML = Object.values(snap.val() || {}).map(m => `<div><small>[${m.time}]</small> <b>${m.user}:</b> ${m.text}</div>`).join('');
+            box.scrollTop = box.scrollHeight;
+        });
+
+        // UTILS
+        window.deleteEntry = (path, id, name) => {
+            if(confirm(`PURGE RECORD [${name}]?`)) {
+                remove(ref(db, `${path}/${id}`));
+                window.addLog(`DELETED_ENTRY: ${path}/${name}`);
+            }
         };
 
-        window.addLog = (m) => push(ref(db, 'logs'), `${new Date().toLocaleString()} | ${m}`);
-        window.deleteEntry = (path, id, label) => confirm(`PURGE RECORD [${label}]?`) && remove(ref(db, `${path}/${id}`));
-        window.saveFile = () => push(ref(db, 'files'), { name: document.getElementById('f-name').value, cat: document.getElementById('f-cat').value, sec: document.getElementById('f-sec').value.toUpperCase(), info: document.getElementById('f-info').value });
-        window.postAlert = () => set(ref(db, 'global_alert'), { msg: document.getElementById('alert-msg').value });
-        window.createUser = () => push(ref(db, 'users'), { u: document.getElementById('new-u').value, p: document.getElementById('new-p').value, r: document.getElementById('new-r').value });
-        window.renderUserTable = () => {
-            const list = document.getElementById('user-list'); if(!list) return;
-            list.innerHTML = [...initialUsers, ...cloudUsers].map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td>${currentSession && currentSession.r === 'Super Admin' && u.id ? `<button class="btn-dim" onclick="window.deleteEntry('users', '${u.id}', '${u.u}')">REVOKE</button>` : '---'}</td></tr>`).join('');
-        };
-        window.renderFilesAll = (data) => {
-            ['public', 'classified', 'ongoing', 'personnel'].forEach(t => {
-                const cont = document.getElementById('list-'+t); if(!cont) return; cont.innerHTML = "";
-                Object.keys(data).forEach(k => {
-                    const f = data[k];
-                    const match = (t==='public' && f.sec==='N') || (t==='classified' && f.sec==='Y') || (t==='ongoing' && f.sec==='O') || (t==='personnel' && f.cat==='Personnel');
-                    if(match) cont.innerHTML += `<div class="card">${currentSession && currentSession.r !== 'Overseer' ? `<button class="btn-delete" onclick="window.deleteEntry('files', '${k}', '${f.name}')">PURGE</button>` : ''}<h3>${f.name}</h3><p>${f.info}</p></div>`;
-                });
-            });
-        };
-        window.router = (id) => { document.querySelectorAll('.page').forEach(p => p.classList.remove('visible')); document.getElementById('page-'+id).classList.add('visible'); };
         window.terminateSession = () => window.location.reload();
-        window.router('public');
+        onValue(ref(db, '.info/connected'), (snap) => {
+            document.getElementById('sync-status').className = snap.val() ? 'sync-online' : '';
+        });
     </script>
-</body></html>
+</body>
+</html>
