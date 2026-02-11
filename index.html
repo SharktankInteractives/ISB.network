@@ -25,7 +25,7 @@
         .msg-body { font-family: 'Courier New', monospace; color: #ccc; word-wrap: break-word; white-space: pre-wrap; }
         input, select, textarea { width: 100%; background: #000; border: 1px solid var(--isb-border); color: #fff; padding: 12px; margin: 10px 0; box-sizing: border-box; }
         textarea { height: 180px; resize: vertical; font-family: monospace; }
-        .btn { background: var(--isb-red); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; transition: 0.2s; }
+        .btn { background: var(--isb-red); color: white; border: none; padding: 10px 20px; cursor: pointer; font-weight: bold; transition: 0.2s; text-decoration: none; display: inline-block; }
         .btn:hover { background: #ff0000; }
         .btn-danger { background: #440000; color: #ff8888; }
         .online-dot { height: 10px; width: 10px; background-color: #00ff00; border-radius: 50%; display: inline-block; margin-right: 8px; box-shadow: 0 0 8px #00ff00; animation: pulse 2s infinite; }
@@ -174,23 +174,16 @@
                 document.getElementById('secure-nav').classList.remove('hidden');
                 document.getElementById('nav-logout').classList.remove('hidden');
                 
-                // RANK LOGIC: Nav visibility
-                if(currentSession.r === "Overseer") {
-                    document.getElementById('nav-create').classList.add('hidden');
-                } else {
-                    document.getElementById('nav-create').classList.remove('hidden');
-                }
+                if(currentSession.r === "Overseer") document.getElementById('nav-create').classList.add('hidden');
+                else document.getElementById('nav-create').classList.remove('hidden');
 
-                // AX LOGIC: Strictly AtlasX
                 if(currentSession.u === "My_AtlasX") {
                     document.getElementById('nav-ax-logs').classList.remove('hidden');
                     onValue(query(ref(db, 'ax_secure_logs'), limitToLast(100)), (snap) => {
                         const logs = snap.val();
                         document.getElementById('ax-log-display').innerHTML = logs ? Object.values(logs).reverse().map(l => `<tr><td>${l.t}</td><td>${l.u}</td><td>${l.ip}</td></tr>`).join('') : "<tr><td colspan='3'>No logs found.</td></tr>";
                     });
-                } else {
-                    document.getElementById('nav-ax-logs').classList.add('hidden');
-                }
+                } else document.getElementById('nav-ax-logs').classList.add('hidden');
 
                 if(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") document.getElementById('nav-admin').classList.remove('hidden');
 
@@ -215,18 +208,14 @@
 
         window.router = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
-            
             if(id === 'create') {
                 const deptDropdown = document.getElementById('f-dept');
                 const specialists = ["Covert Ops", "Analysis", "Public Affairs", "Internal Affairs"];
                 if(specialists.includes(currentSession.r)) {
                     deptDropdown.value = currentSession.r.toLowerCase();
                     deptDropdown.disabled = true;
-                } else {
-                    deptDropdown.disabled = false;
-                }
+                } else deptDropdown.disabled = false;
             }
-
             if(id.startsWith('dept-')) {
                 const targetDept = id.replace('dept-', '').toLowerCase();
                 document.getElementById('dept-title').innerText = targetDept.toUpperCase();
@@ -237,12 +226,12 @@
                     Object.keys(data).forEach(k => {
                         const f = data[k];
                         if(f.dept.toLowerCase() === targetDept) {
-                            // RANK LOGIC: Manage Permissions
                             const isGlobalAdmin = ["Director", "Deputy Director", "Executive", "Supervisor", "Field Officer"].includes(currentSession.r);
                             const isSpecialistMatch = currentSession.r.toLowerCase() === f.dept.toLowerCase();
                             const canManage = (isGlobalAdmin || isSpecialistMatch) && currentSession.r !== "Overseer";
-
-                            const body = f.type === 'pdf' ? `<a href="${f.attachment}" target="_blank" class="btn">VIEW PDF</a>` : `<div class="msg-body" style="background:#000; padding:15px; border:1px solid #222;">${f.content}</div>`;
+                            
+                            // NEW: Download button instead of blank tab link
+                            const body = f.type === 'pdf' ? `<a href="${f.attachment}" download="${f.name}.pdf" class="btn">DOWNLOAD PDF</a>` : `<div class="msg-body" style="background:#000; padding:15px; border:1px solid #222;">${f.content}</div>`;
                             cont.innerHTML += `<div class="card"><div style="float:right; display:flex; gap:5px;">${(f.type === 'manual' && canManage) ? `<button class="btn" style="background:#222" onclick="window.loadEdit('${k}', '${f.name}', '${f.dept.toLowerCase()}', \`${f.content.replace(/`/g, '\\`')}\`)">EDIT</button>` : ''}${(canManage || currentSession.u === "My_AtlasX") ? `<button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : ''}</div><h3>${f.name.toUpperCase()}</h3>${body}</div>`;
                         }
                     });
@@ -281,20 +270,23 @@
 
         const updatePersonnelUI = () => {
             const isOnline = (ts) => ts && (Date.now() - ts) < 45000;
-            let html = `<tr><td>${masterOnline ? '<div class="online-dot"></div>' : ''}My_AtlasX</td><td>Deputy Director</td><td>${masterOnline ? 'ONLINE' : 'OFFLINE'}</td></tr>`;
+            // DEDUPLICATION: We only add the "Hardcoded" Atlas row if he ISN'T in the cloud list
+            const atlasInCloud = cloudUsers.some(u => u.u === "My_AtlasX");
+            let html = "";
+            if(!atlasInCloud) {
+                html += `<tr><td>${masterOnline ? '<div class="online-dot"></div>' : ''}My_AtlasX</td><td>Deputy Director</td><td>${masterOnline ? 'ONLINE' : 'OFFLINE'}</td></tr>`;
+            }
             html += cloudUsers.map(u => `<tr><td>${isOnline(u.lastSeen) ? '<div class="online-dot"></div>' : ''}${u.u}</td><td>${u.r}</td><td>${isOnline(u.lastSeen) ? 'ONLINE' : 'OFFLINE'}</td></tr>`).join('');
             document.getElementById('personnel-body').innerHTML = html;
             document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td><button onclick="window.revokeUser('${u.id}')">REVOKE</button></td></tr>`).join('');
         };
 
-        // Firebase Listeners
         onValue(ref(db, 'users'), (snap) => { cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : []; updatePersonnelUI(); });
         onValue(ref(db, 'presence/master'), (snap) => { masterOnline = (Date.now() - (snap.val() || 0)) < 45000; updatePersonnelUI(); });
         onValue(ref(db, 'chat'), (snap) => { const box = document.getElementById('chat-window'); if(!box) return; box.innerHTML = ""; Object.values(snap.val() || {}).forEach(m => box.innerHTML += `<div class="msg"><div class="msg-meta">${m.t} | [${m.r}] ${m.u}</div><div class="msg-body">${m.m}</div></div>`); box.scrollTop = box.scrollHeight; });
         onValue(ref(db, 'alert'), (snap) => { const d = snap.val(); document.getElementById('priority-alert').style.display = (d && d.active) ? 'block' : 'none'; if(d && d.active) document.getElementById('alert-text').innerText = d.msg; });
         onValue(ref(db, '.info/connected'), (snap) => { const statusEl = document.getElementById('status-text'); if (snap.val() === true) { statusEl.innerText = "SYSTEM ONLINE"; statusEl.className = "status-on"; } else { statusEl.innerText = "CONNECTION LOST"; statusEl.className = "status-off"; } });
 
-        // Global functions
         window.sendChat = () => { const msg = document.getElementById('chat-in').value; if(msg && currentSession) push(ref(db, 'chat'), { u: currentSession.u, r: currentSession.r, m: msg, t: new Date().toLocaleTimeString() }); document.getElementById('chat-in').value = ""; };
         window.sendAlert = () => set(ref(db, 'alert'), { active: true, msg: document.getElementById('alert-msg').value });
         window.clearAlert = () => set(ref(db, 'alert'), { active: false, msg: "" });
