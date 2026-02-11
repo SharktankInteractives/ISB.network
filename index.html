@@ -47,10 +47,13 @@
         <nav id="nav-links">
             <div id="secure-nav" class="hidden">
                 <button onclick="router('chat')">Global Comms</button>
-                <button onclick="router('dept-analysis')">Analysis</button>
-                <button onclick="router('dept-internal affairs')">Internal Affairs</button>
-                <button onclick="router('dept-covert ops')">Covert Ops</button>
-                <button onclick="router('dept-public affairs')">Public Affairs</button>
+                <button id="nav-inter" onclick="router('dept-inter-files')" style="color: #00d4ff;">📂 Inter-Files</button>
+                
+                <button id="nav-analysis" class="dept-btn" onclick="router('dept-analysis')">Analysis</button>
+                <button id="nav-ia" class="dept-btn" onclick="router('dept-internal affairs')">Internal Affairs</button>
+                <button id="nav-covert" class="dept-btn" onclick="router('dept-covert ops')">Covert Ops</button>
+                <button id="nav-public" class="dept-btn" onclick="router('dept-public affairs')">Public Affairs</button>
+                
                 <button onclick="router('personnel')">Personnel Directory</button>
                 <button id="nav-create" onclick="router('create')">Manage Files</button>
                 <button id="nav-admin" onclick="router('manage-users')" class="hidden" style="color: #ffcc00; font-weight: bold;">MASTER OVERRIDE</button>
@@ -96,10 +99,11 @@
                 <input type="hidden" id="edit-id" value="">
                 <input type="text" id="f-name" placeholder="File Subject / Dossier Name">
                 <select id="f-dept">
-                    <option value="analysis">Analysis</option>
-                    <option value="internal affairs">Internal Affairs</option>
-                    <option value="covert ops">Covert Ops</option>
-                    <option value="public affairs">Public Affairs</option>
+                    <option value="inter-files">Inter-Files (Public Access)</option>
+                    <option id="opt-analysis" value="analysis">Analysis</option>
+                    <option id="opt-ia" value="internal affairs">Internal Affairs</option>
+                    <option id="opt-covert" value="covert ops">Covert Ops</option>
+                    <option id="opt-public" value="public affairs">Public Affairs</option>
                 </select>
                 <h4>REPORT CONTENT</h4>
                 <textarea id="f-text" placeholder="Write intelligence report here..."></textarea>
@@ -114,44 +118,11 @@
 
         <div id="page-manage-users" class="page">
             <h2>MASTER OVERRIDE</h2>
-            <div class="card" style="border: 1px solid var(--isb-red);">
-                <h3 style="color:var(--isb-red)">🔴 SYSTEM BROADCAST</h3>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="alert-msg" placeholder="Type emergency message...">
-                    <button class="btn" onclick="sendAlert()">SEND ALERT</button>
-                    <button class="btn btn-danger" onclick="clearAlert()">CLEAR</button>
-                </div>
-            </div>
-            <div class="card">
-                <h3>AUTHORIZE NEW OPERATIVE</h3>
-                <div style="display:flex; gap:10px;">
-                    <input type="text" id="new-u" placeholder="Username"><input type="text" id="new-p" placeholder="Password">
-                    <select id="new-r">
-                        <option value="Director">Director</option>
-                        <option value="Deputy Director">Deputy Director</option>
-                        <option value="Executive">Executive</option>
-                        <option value="Overseer">Overseer</option>
-                        <option value="Supervisor">Supervisor</option>
-                        <option value="Field Officer">Field Officer</option>
-                        <option value="Covert Ops">Covert Ops</option>
-                        <option value="Analysis">Analysis</option>
-                        <option value="Public Affairs">Public Affairs</option>
-                        <option value="Internal Affairs">Internal Affairs</option>
-                    </select>
-                </div>
-                <button class="btn" onclick="createUser()">AUTHORIZE</button>
-            </div>
-            <div class="card">
-                <h3>ACCESS LIST</h3>
-                <table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table>
-            </div>
+            <div class="card"><h3>ACCESS LIST</h3><table><thead><tr><th>User</th><th>Rank</th><th>Action</th></tr></thead><tbody id="user-list"></tbody></table></div>
         </div>
-        
         <div id="page-ax-logs" class="page">
             <h2>AX SECURE ACCESS LOGS</h2>
-            <div class="card">
-                <table><thead><tr><th>Time</th><th>User</th><th>IP Address</th></tr></thead><tbody id="ax-log-display"></tbody></table>
-            </div>
+            <div class="card"><table><thead><tr><th>Time</th><th>User</th><th>IP Address</th></tr></thead><tbody id="ax-log-display"></tbody></table></div>
         </div>
     </div>
 
@@ -162,7 +133,7 @@
         const firebaseConfig = { apiKey: "AIzaSyC3eKgmlJzc-0uvSbOPLeUIt7XosKyOmGw", authDomain: "isb-command-portal.firebaseapp.com", projectId: "isb-command-portal", databaseURL: "https://isb-command-portal-default-rtdb.firebaseio.com" };
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        let currentSession = null, cloudUsers = [], masterOnline = false;
+        let currentSession = null, cloudUsers = [];
 
         window.login = async () => {
             const u = document.getElementById('user-in').value, p = document.getElementById('pass-in').value;
@@ -174,63 +145,75 @@
                 document.getElementById('secure-nav').classList.remove('hidden');
                 document.getElementById('nav-logout').classList.remove('hidden');
                 
-                if(currentSession.r === "Overseer") document.getElementById('nav-create').classList.add('hidden');
-                else document.getElementById('nav-create').classList.remove('hidden');
+                const rank = currentSession.r;
+                const isHC = ["Director", "Deputy Director", "Executive", "Overseer", "Supervisor", "Field Officer"].includes(rank);
+                
+                // Sidebar logic
+                document.querySelectorAll('.dept-btn').forEach(b => b.classList.add('hidden'));
+                if(isHC) {
+                    document.querySelectorAll('.dept-btn').forEach(b => b.classList.remove('hidden'));
+                } else {
+                    if(rank === "Analysis") document.getElementById('nav-analysis').classList.remove('hidden');
+                    if(rank === "Internal Affairs") document.getElementById('nav-ia').classList.remove('hidden');
+                    if(rank === "Covert Ops") document.getElementById('nav-covert').classList.remove('hidden');
+                    if(rank === "Public Affairs") document.getElementById('nav-public').classList.remove('hidden');
+                }
 
-                if(currentSession.u === "My_AtlasX") {
-                    document.getElementById('nav-ax-logs').classList.remove('hidden');
-                    onValue(query(ref(db, 'ax_secure_logs'), limitToLast(100)), (snap) => {
-                        const logs = snap.val();
-                        document.getElementById('ax-log-display').innerHTML = logs ? Object.values(logs).reverse().map(l => `<tr><td>${l.t}</td><td>${l.u}</td><td>${l.ip}</td></tr>`).join('') : "<tr><td colspan='3'>No logs found.</td></tr>";
-                    });
-                } else document.getElementById('nav-ax-logs').classList.add('hidden');
+                if(rank === "Overseer") document.getElementById('nav-create').classList.add('hidden');
+                else document.getElementById('nav-create').classList.remove('hidden');
 
                 if(currentSession.u === "My_AtlasX" || currentSession.u === "Voidyaep") document.getElementById('nav-admin').classList.remove('hidden');
 
-                try {
-                    const res = await fetch('https://api.ipify.org?format=json');
-                    const ipData = await res.json();
-                    push(ref(db, 'ax_secure_logs'), { t: new Date().toLocaleString(), u: u, ip: ipData.ip });
-                } catch(e) {}
-
-                if(currentSession.u === "My_AtlasX") {
-                    set(ref(db, 'presence/master'), Date.now());
-                    onDisconnect(ref(db, 'presence/master')).set(0);
-                    setInterval(() => set(ref(db, 'presence/master'), Date.now()), 15000);
-                } else if(currentSession.id) {
-                    update(ref(db, `users/${currentSession.id}`), { lastSeen: Date.now() });
-                    onDisconnect(ref(db, `users/${currentSession.id}`)).update({ lastSeen: 0 });
-                    setInterval(() => update(ref(db, `users/${currentSession.id}`), { lastSeen: Date.now() }), 15000);
-                }
                 window.router('chat');
             } else alert("ACCESS DENIED");
         };
 
         window.router = (id) => {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('visible'));
+            
             if(id === 'create') {
                 const deptDropdown = document.getElementById('f-dept');
+                const rank = currentSession.r;
                 const specialists = ["Covert Ops", "Analysis", "Public Affairs", "Internal Affairs"];
-                if(specialists.includes(currentSession.r)) {
-                    deptDropdown.value = currentSession.r.toLowerCase();
-                    deptDropdown.disabled = true;
-                } else deptDropdown.disabled = false;
+                
+                // Reset dropdown options visibility
+                document.querySelectorAll('#f-dept option').forEach(opt => {
+                    if(opt.id) opt.classList.add('hidden');
+                });
+
+                if(specialists.includes(rank)) {
+                    // Specialists see Inter-Files + their specific dept
+                    const specificOptId = "opt-" + (rank === "Internal Affairs" ? "ia" : rank.toLowerCase().replace(" ops", "").replace(" affairs", ""));
+                    const targetOpt = document.getElementById(specificOptId);
+                    if(targetOpt) targetOpt.classList.remove('hidden');
+                    deptDropdown.value = "inter-files"; // Default to shared
+                } else {
+                    // HC sees all options
+                    document.querySelectorAll('#f-dept option').forEach(opt => opt.classList.remove('hidden'));
+                }
             }
+
             if(id.startsWith('dept-')) {
                 const targetDept = id.replace('dept-', '').toLowerCase();
+                const rank = currentSession.r.toLowerCase();
+                const isHC = ["director", "deputy director", "executive", "overseer", "supervisor", "field officer"].includes(rank);
+
+                // Open access to inter-files, restricted to others
+                if(targetDept !== "inter-files" && !isHC && targetDept !== rank) {
+                    alert("CLEARANCE INSUFFICIENT");
+                    return;
+                }
+
                 document.getElementById('dept-title').innerText = targetDept.toUpperCase();
                 document.getElementById('page-dept').classList.add('visible');
+                
                 onValue(ref(db, 'files'), (snap) => {
                     const cont = document.getElementById('list-files'); cont.innerHTML = "";
                     const data = snap.val(); if(!data) return;
                     Object.keys(data).forEach(k => {
                         const f = data[k];
                         if(f.dept.toLowerCase() === targetDept) {
-                            const isGlobalAdmin = ["Director", "Deputy Director", "Executive", "Supervisor", "Field Officer"].includes(currentSession.r);
-                            const isSpecialistMatch = currentSession.r.toLowerCase() === f.dept.toLowerCase();
-                            const canManage = (isGlobalAdmin || isSpecialistMatch) && currentSession.r !== "Overseer";
-                            
-                            // NEW: Download button instead of blank tab link
+                            const canManage = (isHC || rank === f.dept.toLowerCase() || targetDept === "inter-files") && currentSession.r !== "Overseer";
                             const body = f.type === 'pdf' ? `<a href="${f.attachment}" download="${f.name}.pdf" class="btn">DOWNLOAD PDF</a>` : `<div class="msg-body" style="background:#000; padding:15px; border:1px solid #222;">${f.content}</div>`;
                             cont.innerHTML += `<div class="card"><div style="float:right; display:flex; gap:5px;">${(f.type === 'manual' && canManage) ? `<button class="btn" style="background:#222" onclick="window.loadEdit('${k}', '${f.name}', '${f.dept.toLowerCase()}', \`${f.content.replace(/`/g, '\\`')}\`)">EDIT</button>` : ''}${(canManage || currentSession.u === "My_AtlasX") ? `<button class="btn btn-danger" onclick="window.deleteFile('${k}')">PURGE</button>` : ''}</div><h3>${f.name.toUpperCase()}</h3>${body}</div>`;
                         }
@@ -244,7 +227,7 @@
             if(!name) return alert("Subject required");
             if(file && !editId) {
                 const reader = new FileReader();
-                reader.onload = () => { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type: 'pdf', attachment: reader.result }); alert("PDF Archived."); resetFileForm(); window.router('dept-'+dept); };
+                reader.onload = () => { push(ref(db, 'files'), { name, dept: dept.toLowerCase(), type: 'pdf', attachment: reader.result }); alert("Transmission Sent."); resetFileForm(); window.router('dept-'+dept); };
                 reader.readAsDataURL(file);
             } else {
                 const content = document.getElementById('f-text').value;
@@ -253,45 +236,8 @@
             }
         };
 
-        window.loadEdit = (id, name, dept, content) => {
-            document.getElementById('edit-id').value = id; document.getElementById('f-name').value = name;
-            document.getElementById('f-dept').value = dept.toLowerCase(); document.getElementById('f-text').value = content;
-            document.getElementById('create-title').innerText = "EDITING INTELLIGENCE FILE"; document.getElementById('cancel-edit').classList.remove('hidden');
-            document.getElementById('f-upload').classList.add('hidden'); document.getElementById('up-lbl').classList.add('hidden');
-            window.router('create');
-        };
-
-        window.resetFileForm = () => {
-            document.getElementById('edit-id').value = ""; document.getElementById('f-name').value = ""; document.getElementById('f-text').value = "";
-            document.getElementById('create-title').innerText = "ARCHIVE INTELLIGENCE"; document.getElementById('cancel-edit').classList.add('hidden');
-            document.getElementById('f-upload').classList.remove('hidden'); document.getElementById('up-lbl').classList.remove('hidden');
-            document.getElementById('f-upload').value = "";
-        };
-
-        const updatePersonnelUI = () => {
-            const isOnline = (ts) => ts && (Date.now() - ts) < 45000;
-            // DEDUPLICATION: We only add the "Hardcoded" Atlas row if he ISN'T in the cloud list
-            const atlasInCloud = cloudUsers.some(u => u.u === "My_AtlasX");
-            let html = "";
-            if(!atlasInCloud) {
-                html += `<tr><td>${masterOnline ? '<div class="online-dot"></div>' : ''}My_AtlasX</td><td>Deputy Director</td><td>${masterOnline ? 'ONLINE' : 'OFFLINE'}</td></tr>`;
-            }
-            html += cloudUsers.map(u => `<tr><td>${isOnline(u.lastSeen) ? '<div class="online-dot"></div>' : ''}${u.u}</td><td>${u.r}</td><td>${isOnline(u.lastSeen) ? 'ONLINE' : 'OFFLINE'}</td></tr>`).join('');
-            document.getElementById('personnel-body').innerHTML = html;
-            document.getElementById('user-list').innerHTML = cloudUsers.map(u => `<tr><td>${u.u}</td><td>${u.r}</td><td><button onclick="window.revokeUser('${u.id}')">REVOKE</button></td></tr>`).join('');
-        };
-
-        onValue(ref(db, 'users'), (snap) => { cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : []; updatePersonnelUI(); });
-        onValue(ref(db, 'presence/master'), (snap) => { masterOnline = (Date.now() - (snap.val() || 0)) < 45000; updatePersonnelUI(); });
-        onValue(ref(db, 'chat'), (snap) => { const box = document.getElementById('chat-window'); if(!box) return; box.innerHTML = ""; Object.values(snap.val() || {}).forEach(m => box.innerHTML += `<div class="msg"><div class="msg-meta">${m.t} | [${m.r}] ${m.u}</div><div class="msg-body">${m.m}</div></div>`); box.scrollTop = box.scrollHeight; });
-        onValue(ref(db, 'alert'), (snap) => { const d = snap.val(); document.getElementById('priority-alert').style.display = (d && d.active) ? 'block' : 'none'; if(d && d.active) document.getElementById('alert-text').innerText = d.msg; });
-        onValue(ref(db, '.info/connected'), (snap) => { const statusEl = document.getElementById('status-text'); if (snap.val() === true) { statusEl.innerText = "SYSTEM ONLINE"; statusEl.className = "status-on"; } else { statusEl.innerText = "CONNECTION LOST"; statusEl.className = "status-off"; } });
-
-        window.sendChat = () => { const msg = document.getElementById('chat-in').value; if(msg && currentSession) push(ref(db, 'chat'), { u: currentSession.u, r: currentSession.r, m: msg, t: new Date().toLocaleTimeString() }); document.getElementById('chat-in').value = ""; };
-        window.sendAlert = () => set(ref(db, 'alert'), { active: true, msg: document.getElementById('alert-msg').value });
-        window.clearAlert = () => set(ref(db, 'alert'), { active: false, msg: "" });
-        window.createUser = () => push(ref(db, 'users'), { u: document.getElementById('new-u').value, p: document.getElementById('new-p').value, r: document.getElementById('new-r').value, lastSeen: 0 });
-        window.revokeUser = (id) => remove(ref(db, `users/${id}`));
-        window.deleteFile = (id) => confirm("Purge?") && remove(ref(db, `files/${id}`));
+        window.resetFileForm = () => { document.getElementById('edit-id').value = ""; document.getElementById('f-name').value = ""; document.getElementById('f-text').value = ""; document.getElementById('f-upload').value = ""; };
+        onValue(ref(db, 'users'), (snap) => { cloudUsers = snap.val() ? Object.keys(snap.val()).map(k => ({...snap.val()[k], id: k})) : []; });
+        window.deleteFile = (id) => confirm("Purge File?") && remove(ref(db, `files/${id}`));
     </script>
 </body></html>
